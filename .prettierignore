@@ -9,9 +9,6 @@ next-env.d.ts
 pnpm-lock.yaml
 
 # Vendored spec — preserve the author's line breaks and table alignment.
-# Both paths are listed while the rename to ARCHITECTURE.md is in flight; drop
-# the old one once that lands.
-docs/developer-control-center-spec.md
 docs/ARCHITECTURE.md
 
 # Vendored design-system export — owned by the design kit that generated it,

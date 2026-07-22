@@ -1,0 +1,86 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Core controls" subtitle="Button, IconButton, Input, Select, Checkbox, Switch" -->
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../../styles.css" />
+    <script
+      src="https://unpkg.com/react@18.3.1/umd/react.development.js"
+      integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"
+      integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"
+      integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"
+      crossorigin="anonymous"
+    ></script>
+    <script src="../../_ds_bundle.js"></script>
+    <style>
+      body {
+        background: var(--bg-0);
+        padding: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      const { Button, IconButton, Input, Select, Checkbox, Switch } =
+        window.DCCDesignSystem_28b72e;
+      function Demo() {
+        const [on, setOn] = React.useState(true);
+        const [cb, setCb] = React.useState(true);
+        const row = {
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          flexWrap: "wrap",
+        };
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={row}>
+              <Button variant="primary">Restart workload</Button>
+              <Button>Re-run failed checks</Button>
+              <Button variant="ghost">Open in Grafana</Button>
+              <Button variant="danger">Trigger deploy</Button>
+              <Button disabled>Restart workload</Button>
+              <Button size="sm" icon={<span>▶</span>}>
+                Tail logs
+              </Button>
+              <IconButton label="Refresh">⟳</IconButton>
+              <IconButton label="Pause polling" active>
+                ⏸
+              </IconButton>
+            </div>
+            <div style={row}>
+              <div style={{ width: 220 }}>
+                <Input placeholder="Filter services…" />
+              </div>
+              <div style={{ width: 300 }}>
+                <Input mono defaultValue="https://qa.acme.dev/openapi.json" />
+              </div>
+              <div style={{ width: 180 }}>
+                <Input placeholder="Required" invalid />
+              </div>
+            </div>
+            <div style={row}>
+              <Select
+                mono
+                options={["dev", "qa", "staging"]}
+                defaultValue="qa"
+              />
+              <Checkbox checked={cb} onChange={setCb} label="Failing only" />
+              <Switch checked={on} onChange={setOn} label="Polling" />
+              <Switch checked={false} label="Follow tail" />
+            </div>
+          </div>
+        );
+      }
+      ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+    </script>
+  </body>
+</html>

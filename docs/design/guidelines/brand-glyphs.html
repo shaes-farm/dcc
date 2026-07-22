@@ -1,0 +1,82 @@
+<!-- @dsCard group="Brand" viewport="700x160" name="Glyphs & icons" subtitle="Unicode status glyphs inline; Lucide (CDN substitution) for chrome — no emoji, no custom SVG" -->
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        background: var(--bg-1);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .row {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        font-family: var(--font-mono);
+        font-size: 16px;
+      }
+      .g {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        align-items: center;
+      }
+      .l {
+        font-size: var(--fs-2xs);
+        color: var(--text-3);
+        font-family: var(--font-ui);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <span class="g"
+        ><span style="color: var(--status-healthy)">✓</span
+        ><span class="l">pass</span></span
+      >
+      <span class="g"
+        ><span style="color: var(--status-degraded)">⚠</span
+        ><span class="l">warn</span></span
+      >
+      <span class="g"
+        ><span style="color: var(--status-failing)">⛔</span
+        ><span class="l">fail</span></span
+      >
+      <span class="g"
+        ><span style="color: var(--status-deploying)">⏳</span
+        ><span class="l">deploying</span></span
+      >
+      <span class="g"
+        ><span style="color: var(--text-2)">▶</span
+        ><span class="l">run</span></span
+      >
+      <span class="g"
+        ><span style="color: var(--text-2)">⚡</span
+        ><span class="l">action</span></span
+      >
+      <span class="g"
+        ><span style="color: var(--text-2)">⏪</span
+        ><span class="l">diff</span></span
+      >
+      <span class="g"
+        ><span style="color: var(--text-2)">→</span
+        ><span class="l">lineage</span></span
+      >
+      <span class="g"
+        ><span style="color: var(--text-2)">⌘</span
+        ><span class="l">palette</span></span
+      >
+      <span class="g"
+        ><span style="color: var(--text-2)">⟳</span
+        ><span class="l">refresh</span></span
+      >
+    </div>
+    <div style="font-size: var(--fs-sm); color: var(--text-3)">
+      Chrome icons: Lucide, 14–16px, stroke 1.5–1.75 (matches the mandated
+      shadcn/ui stack; the source defines no icon set — substitution).
+    </div>
+  </body>
+</html>

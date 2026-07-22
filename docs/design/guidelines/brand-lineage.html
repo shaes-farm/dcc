@@ -1,0 +1,61 @@
+<!-- @dsCard group="Brand" viewport="700x170" name="Lineage strip" subtitle="The supply chain of what's running, left to right — every node a URI" -->
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        background: var(--bg-1);
+        padding: 16px;
+        display: flex;
+        align-items: center;
+      }
+      .strip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-mono);
+        font-size: var(--fs-sm);
+        flex-wrap: wrap;
+      }
+      .node {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--bg-2);
+        border: 1px solid var(--border-1);
+        border-radius: var(--radius-1);
+        padding: 5px 9px;
+        white-space: nowrap;
+      }
+      .arr {
+        color: var(--text-3);
+      }
+      .t3 {
+        color: var(--text-3);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="strip">
+      <span class="node"
+        >PR #248 <span class="t3">merged 2h · @alice</span></span
+      ><span class="arr">→</span>
+      <span class="node"
+        >Build #1842 <span style="color: var(--status-healthy)">✓</span></span
+      ><span class="arr">→</span>
+      <span class="node"
+        >checkout:3.7.12 <span class="t3">sha256:4bf9…</span></span
+      ><span class="arr">→</span>
+      <span class="node"
+        >qa <span style="color: var(--status-healthy)">✓</span></span
+      >
+      <span class="node"
+        >staging <span style="color: var(--status-healthy)">✓</span></span
+      >
+      <span class="node"
+        >prod <span style="color: var(--status-deploying)">⏳</span></span
+      >
+    </div>
+  </body>
+</html>
