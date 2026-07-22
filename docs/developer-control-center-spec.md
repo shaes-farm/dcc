@@ -1,10 +1,11 @@
 # Developer Control Center (DCC) — Product & Technical Specification
 
-**Version:** 0.3 (frozen as architectural north star — build from here)
+**Version:** 0.4 (final pre-build amendment — frozen; build from here)
 **Status:** Ready for Claude Design (UI) and Claude Code (implementation) handoff
 **Deployment model:** Local-only tool. Runs on the developer's machine, binds to localhost, uses the developer's own credentials. Single user, no server-side multi-tenancy.
 **Changelog 0.1 → 0.2:** Service is now the primary navigation object; formal Domain Model with resource URIs added (§3); all integrations generalized behind provider interfaces, not just deployments (§2.2); config restructured as a reference graph (§4); Workspace Health is the home screen (§5.1); UI recast as dockable panels with layout presets (§5.3); command palette promoted to a first-class spec (§5.4); Related Resources panel added (§5.5); cross-repo Git queries, API cross-linking, and observability correlation threads added (§6).
 **Changelog 0.2 → 0.3:** The graph is elevated to the **Knowledge Graph** — the application's central data structure, modeling engineering knowledge, not just runtime (§3.3); **Document** added as a canonical object with `doc://` URIs (§3.1); `DocumentationProvider` generalized to **KnowledgeProvider**, with a minimal repo-markdown implementation in v1 (§2.2, §6.5); Related Resources renamed **Context** (§5.5); services become inference-first — config describes only what cannot be inferred (§4.2); product framing sharpened to *an IDE for distributed systems* (§1); Phase 0 refocused to domain model + provider interfaces + GitHub end-to-end + minimal cockpit (§11). Spec is now frozen; further sophistication should be earned in code.
+**Changelog 0.3 → 0.4:** **Artifact** added as a canonical object — the bridge between source and runtime; deployments *consume* artifacts, repositories *produce* them (§3.1); **WorkflowRun** promoted from a Git-domain concept to a canonical object (§3.1); the Domain Model reframed around the **software delivery lifecycle** — Knowledge → Planning → Source → Build → Artifact → Deploy → Runtime → Observe — with providers enriching stages (§3.0); `ArtifactProvider` interface defined, with v1 lineage **derived** from existing data (workload image digests ↔ CI runs ↔ commit SHAs) and registry implementations deferred to Providers+ (§2.2, §11); **Lineage strip** added to the service cockpit (§5.2). Model now; providers later.
 
 ---
 
@@ -93,7 +94,7 @@ Every integration category — not just deployments — sits behind a provider i
 ```ts
 interface Provider {
   id: string;                                  // "github", "k8s", "vercel", "loki", …
-  kind: "git" | "deployment" | "observability" | "api" | "issue" | "knowledge";
+  kind: "git" | "deployment" | "observability" | "api" | "issue" | "knowledge" | "artifact";
   capabilities(): Capability[];
   testConnection(): Promise<ConnectionResult>; // powers Settings "test" buttons
 }
@@ -130,6 +131,12 @@ interface ApiProvider extends Provider {
   proxyRequest(req: PlaygroundRequest): Promise<PlaygroundResponse>;
 }
 
+interface ArtifactProvider extends Provider {
+  listArtifacts(scope: Uri | "workspace"): Promise<ArtifactRef[]>;   // per repo/service or all
+  getArtifact(a: Uri): Promise<Artifact>;         // versions, tags, digest, publishedAt, provenance
+  resolveByDigest(digest: string): Promise<Artifact | null>;         // link runtime → registry
+}
+
 interface KnowledgeProvider extends Provider {
   listDocuments(scope: Uri | "workspace"): Promise<DocumentRef[]>;  // ADRs, RFCs, runbooks, READMEs…
   getDocument(doc: Uri): Promise<Document>;                         // normalized: title, kind, body (md), source
@@ -141,6 +148,8 @@ interface IssueProvider extends Provider { /* Jira, Linear, GitHub Issues-as-tra
 
 `KnowledgeProvider` deliberately generalizes "documentation": repo markdown, GitHub wikis, Notion, Confluence, Obsidian vaults, and Google Docs are all just knowledge sources that emit `Document`s into the Knowledge Graph. **v1 ships one trivial implementation** — *repo-markdown*, which discovers `README*`, `docs/**`, and `adr|adrs|rfcs/**` through the Git provider (§6.5) — so `doc://` URIs and the Context panel have real content from day one. Richer sources plug in later without touching the UI.
 
+`ArtifactProvider` covers package/container registries — GHCR, GitHub Packages, Docker Hub, ECR/ACR/GAR, Artifactory, Harbor, Nexus, npm, NuGet — which all expose the same concepts: versions, tags, digests, publication dates, provenance. **No registry implementation is required for v1 lineage:** Artifact nodes are *derived* from data DCC already fetches — the image reference/digest on a running workload, matched by SHA/tag to the CI run and commit that produced it. Registry providers (GHCR/GitHub Packages first, riding existing GitHub auth) later enrich those same nodes with version history, publish metadata, and provenance attestations (SBOM/SLSA attach here too) without any model change.
+
 **Normalized status vocabulary** across all deployment providers: `healthy | degraded | failing | deploying | unknown`. Mapping rules must be documented in code (e.g., K8s `CrashLoopBackOff` → `failing`; Vercel `BUILDING` → `deploying`; missing metrics → `unknown`, never guess `healthy`). The UI only ever renders the normalized vocabulary.
 
 ---
@@ -149,6 +158,19 @@ interface IssueProvider extends Provider { /* Jira, Linear, GitHub Issues-as-tra
 
 This section defines the canonical objects and the graph that connects them. Every panel, provider, and config entity builds on this vocabulary — new providers map *into* it, preventing drift as the platform grows.
 
+### 3.0 Organizing principle: the software delivery lifecycle
+
+The canonical objects are not a pile of resources — they are **stages in the software delivery lifecycle**, and every provider enriches one or more stages:
+
+```
+Knowledge → Planning → Source  →  Build   → Artifact →  Deploy   → Runtime  → Observe
+(Document)  (Issue*)  (Repository, (WorkflowRun) (Artifact) (Deployment) (Workload,  (Dashboard,
+                       PullRequest)                                        Pod, Api)  Logs, Trace)
+                                                                    * interface only in v1
+```
+
+This is a stronger organizing principle than "GitHub + Kubernetes + Grafana": new capabilities — artifact registries today; SBOMs, SLSA provenance attestations, vulnerability scanners tomorrow — attach to existing lifecycle nodes (mostly `Artifact`) and participate in the same Knowledge Graph without changing the model. A deployment doesn't produce a container; it **consumes** one. A repository doesn't deploy; it **produces** artifacts via workflows. The model reflects that reality.
+
 ### 3.1 Canonical objects
 
 | Object | Definition | Produced by |
@@ -156,7 +178,9 @@ This section defines the canonical objects and the graph that connects them. Eve
 | **Workspace** | The root: one config file, one set of services/providers. | Config |
 | **Service** | The primary object. A logical application/component an engineer thinks in (Checkout, UI Library). Aggregates references to everything below. | Config |
 | **Repository** | A source repo (code, library, infra). | GitProvider |
-| **PullRequest / Issue / WorkflowRun / Release / Package / SecurityAlert / Dependency** | Normalized Git-domain concepts, each independently queryable across all repos. | GitProvider |
+| **PullRequest / Issue / Release / SecurityAlert / Dependency** | Normalized Git-domain concepts, each independently queryable across all repos. | GitProvider |
+| **WorkflowRun** | A CI/build execution (GitHub Actions in v1; CircleCI, Jenkins, Buildkite, GitLab CI later). The Build stage: consumes a commit, produces artifacts. Answers "which workflow produced this image?" and "which workflow failed?" | GitProvider (CI providers later) |
+| **Artifact** | A published, versioned build output: OCI/Docker image, npm/NuGet/Maven/PyPI package, Helm chart, Debian package, Terraform module. Fields: `id, version, tags, digest, publishedAt, publisher, sourceRepo, sourceCommit, producingRun, provenance?`. The bridge between engineering and operations: repositories produce artifacts, deployments consume them. | Derived (v1) + ArtifactProvider |
 | **Environment** | A deployment target (dev, qa, staging, previews) with a `tier` (`sandbox`/`shared`/`prod-like`). | Config + DeploymentProvider |
 | **Deployment** | A rollout event of a service into an environment (version/SHA, time, actor, state). | DeploymentProvider |
 | **Workload** | A running unit (K8s Deployment/StatefulSet/CronJob, Vercel function, CF worker). Contains **Pods** where applicable. | DeploymentProvider |
@@ -178,6 +202,7 @@ service://checkout
 repo://github/acme/checkout-svc
 pr://github/acme/checkout-svc/482
 run://github/acme/checkout-svc/9182734
+artifact://ghcr/acme/checkout@sha256:4bf9…      artifact://npm/@acme/ui-kit@3.7.12
 alert://github/codeql/1234
 env://qa
 deploy://qa/checkout/2026-07-21T14.32_a1b2c3d
@@ -205,7 +230,7 @@ action://restartWorkload?target=workload://qa/checkout/deployment/checkout
 | Edge source | Examples |
 |---|---|
 | **Declared** (config references, §4) | `service://checkout —has-repo→ repo://…`, `—runs-in→ env://qa`, `—exposes→ api://checkout/rest`, `—measured-by→ dashboard://…` |
-| **Inferred from providers** | deploys ↔ commits/PRs (SHA match), pods ↔ workloads ↔ services (label/selector match), alerts ↔ repos ↔ services, repo manifests → services (§4.2) |
+| **Inferred from providers** | the supply chain: `repo —via PR/merge→ commit —built-by→ run —produced→ artifact —consumed-by→ deployment —runs-as→ workload` (SHA/digest/tag matching); pods ↔ workloads ↔ services (label/selector match); alerts ↔ repos ↔ services; repo manifests → services (§4.2) |
 | **Inferred from telemetry/specs** | service → service call edges from OTel service-graph metrics or OpenAPI `links`; manual `dependsOn` config edges as fallback |
 | **Knowledge** | `service://checkout —explained-by→ doc://…adr/0017…`, `—runbook→ doc://…checkout-oncall…`, `—owned-by→ CODEOWNERS entry`; doc→doc links from markdown cross-references |
 
@@ -308,6 +333,7 @@ The config is shaped as **keyed collections + ID references**: every entity is d
 | 2 | APIs | Spec discovery: OpenAPI/GraphQL endpoints advertised in the repo (well-known paths, `package.json`/manifest hints) or `apis[]` entries whose id is prefixed by the service id |
 | 3 | Environments & workloads | Workloads across configured environments whose labels/name match the service id (K8s label conventions: `app`, `app.kubernetes.io/name`) |
 | 4 | Deployments & base URLs | From matched workloads' provider metadata (ingress/route where derivable) |
+| 4b | Artifacts & producing runs | From matched workloads' image references (digest/tag) ↔ workflow runs and commits by SHA/tag match; registry metadata merged in when an `ArtifactProvider` is configured |
 | 5 | Dashboards & health checks | `dashboards[]` / `healthChecks[]` entries tagged with or named after the service |
 | 6 | Documents & owners | Repo-markdown discovery (README, docs/**, ADRs, runbooks) + `CODEOWNERS` |
 | 7 | Dependencies | OTel service-graph → OpenAPI `links` → manual `dependsOn` |
@@ -365,6 +391,14 @@ Checkout                                          ● degraded
 └────────────┴──────────────────────┴────────────────────────┘
 ```
 
+The cockpit is crowned by a **Lineage strip** — the supply chain of the currently running version, walked left-to-right from the Knowledge Graph, every node a URI:
+
+```
+PR #248 (merged 2h, @alice) → Build #1842 ✓ → checkout:3.7.12 (sha256:4bf9…) → qa ✓ · staging ✓ · prod ⏳
+```
+
+This preserves *lineage*, not just a deployment list: during an incident, "what exactly is running, which build produced it, and who merged it" is one glance. When environments run different versions, the strip fans out per environment.
+
 Tool-centric lenses (all repos, all environments, all APIs, observability) remain available below the service list — they're the same panels bound to workspace scope instead of a service.
 
 ### 5.3 Panels, not pages
@@ -373,7 +407,7 @@ Every capability in §6 ships as a **panel**: a self-contained, URI-parameterize
 
 - **Layouts** are named arrangements of panels, savable as **presets** ("Debugging", "Tech-lead review", "On-call"). Presets persist to `~/.dcc/layouts.json` and are palette-switchable.
 - **v1 docking model (deliberately constrained):** a slot-based grid — split, resize, swap, and maximize panels within preset slots — rather than fully free-form floating/tabbed docking. Free-form docking (dockview-style) is the v2 upgrade path; the panel contract is identical either way. This keeps Phase 0 tractable without painting us into a corner.
-- Panel library (v1): Workspace Health, Service Cockpit slots, Repos grid, PRs, Workflow Runs, Security, Environments, Pods, Pod detail, Deploys, Logs, Log search, REST explorer, GraphQL explorer, Health board, Error rates, Latency, Pinned dashboard, Context, Documents, Document viewer, Audit log.
+- Panel library (v1): Workspace Health, Service Cockpit slots, Repos grid, PRs, Workflow Runs, Security, Environments, Pods, Pod detail, Deploys, Logs, Log search, REST explorer, GraphQL explorer, Health board, Error rates, Latency, Pinned dashboard, Context, Documents, Document viewer, Lineage strip, Artifacts, Audit log.
 - Panels degrade independently: an unreachable provider turns *its* panels into inline error cards; the layout stands.
 
 ### 5.4 Command palette (⌘K) — first-class spec
@@ -416,6 +450,7 @@ Checkout Service
  APIs         → REST · (calls: catalog-graph)
  Dashboards   → Errors · Latency
  Security     → 3 CodeQL alerts
+ Artifact     → checkout:3.7.12 (sha256:4bf9…) · built by Build #1842
  Documents    → ADR-0017 Extract pricing · Runbook: checkout on-call · README
  Owners       → @payments-team (CODEOWNERS)
  Depends on   → catalog        Used by → storefront
@@ -506,6 +541,7 @@ The four capability families from v0.1 survive intact — as panel libraries bou
 
 ```
  14:32  Deployment · checkout @ qa · a1b2c3d          deploy://…
+        └ consumed checkout:3.7.12 · Build #1842      artifact://… run://…
  14:33  Error rate 0.2% → 4.7%                        dashboard://errors
  14:33  ✗ POST /orders 500 ×214                       logs://…
         └ trace 4bf92f35 · NPE in PricingClient       trace://…
@@ -515,7 +551,7 @@ The four capability families from v0.1 survive intact — as panel libraries bou
  Suggested next steps:  ⏪ view diff · ⚡ restart workload · 📄 tail logs
 ```
 
-Every row is a URI. The chain is heuristic (SHA match, time-window overlap, trace/log linkage) and each link states its evidence; DCC proposes the story, the engineer verifies it. v1 scope: deploy ↔ metric-window ↔ logs ↔ trace ↔ PR/commit/author.
+Every row is a URI. The chain is heuristic (SHA match, time-window overlap, trace/log linkage) and each link states its evidence; DCC proposes the story, the engineer verifies it. v1 scope: deploy ↔ artifact/build ↔ metric-window ↔ logs ↔ trace ↔ PR/commit/author.
 
 6. **Pinned Grafana dashboards** — embedded via shareable panels where auth allows; otherwise link cards. Never block on Grafana reachability.
 
@@ -557,7 +593,7 @@ Persistent bottom bar: active workspace name, active layout preset, polling stat
 - **Layout:** left rail = **services** (status-dotted) with capability lenses beneath; content area = the panel grid; right-side drawers for object detail (pod drawer, Context) so context is never lost; status bar bottom.
 - **Motion:** minimal; only state-change transitions (status color fades, drawer slides, panel swap). No skeleton shimmer storms — prefer stale-data-with-timestamp over spinners.
 - **Empty/error states:** every panel needs a designed empty state ("No services configured → Add in Settings") and a degraded state (provider unreachable) — first-class designs, not afterthoughts.
-- **Surface inventory to design:** Workspace Health (home), service left rail, Service Cockpit (default layout), the full panel library (§5.3) in grid slots, panel maximized state, layout preset switcher, command palette (all states incl. progressive narrowing and inline action confirm), Context panel + drawer (incl. Documents/Owners rows), Documents list + Document viewer, correlation thread, API dependency map, pod drawer, Settings (per-section forms + reference pickers + connection tests + config diff + Resolution inspector), config-repair screen, audit log, all confirmation dialogs (standard + typed-name), degraded/empty states for every panel.
+- **Surface inventory to design:** Workspace Health (home), service left rail, Service Cockpit (default layout), the full panel library (§5.3) in grid slots, panel maximized state, layout preset switcher, command palette (all states incl. progressive narrowing and inline action confirm), Context panel + drawer (incl. Artifact/Documents/Owners rows), Documents list + Document viewer, Lineage strip (single + fanned-out states), correlation thread, API dependency map, pod drawer, Settings (per-section forms + reference pickers + connection tests + config diff + Resolution inspector), config-repair screen, audit log, all confirmation dialogs (standard + typed-name), degraded/empty states for every panel.
 
 ---
 
@@ -605,11 +641,11 @@ Phase 0 is deliberately a **vertical slice**, not a horizontal foundation: the d
 |---|---|---|
 | **0. Vertical slice** | Domain model + URI codec, config load/validate/repair + inference resolver (v0: repo↔service matching), provider interfaces, **GitProvider (GitHub) end-to-end**, panel slot engine, **minimal service cockpit** (Repository/PRs/Security panels bound via the Knowledge Graph), palette shell, theme + left rail | Select a service → cockpit renders live GitHub data; every rendered object has a copyable URI; graph edges + provenance inspectable; invalid config or dangling refs show repair screen |
 | **1. Git depth + knowledge** | Repo grid/detail, workspace workflow-runs + security rollup, re-run CI action + audit log; repo-markdown KnowledgeProvider, Documents/viewer, Context panel v1; Workspace Health (git-scope) | §6.1 and §6.5 acceptance criteria pass |
-| **2. Environments** | K8s provider + resolver workload inference, env panels, pod drawer, log tail, restart action; cockpit gains Pods/Deploys/Logs; Resolution inspector | §6.2 criteria pass; `{ "id": "checkout" }` alone binds repo + workloads |
+| **2. Environments + lineage** | K8s provider + resolver workload inference, env panels, pod drawer, log tail, restart action; cockpit gains Pods/Deploys/Logs + **derived Lineage strip** (workload image ↔ run ↔ PR by SHA, no registry needed); Resolution inspector | §6.2 criteria pass; `{ "id": "checkout" }` alone binds repo + workloads; lineage strip resolves PR→build→image→env when SHAs match |
 | **3. API Playground** | Spec ingestion (OAS3/Swagger2), REST explorer, proxy; then GraphQL; dependency map from `dependsOn` | §6.3 criteria pass (map from manual edges) |
 | **4. Observability** | Health board, error/latency panels, Loki log search, deploy markers; Workspace Health fully live | §6.4 criteria 1–3 pass |
 | **5. Correlation + palette depth** | Correlation thread (deploy↔metric↔log↔trace↔PR), palette progressive narrowing + actions, OTel-derived map + dependency edges | §6.4 criterion 4 and §5.4 criteria pass |
-| **6. Providers+** | Vercel + Cloudflare adapters, Vercel observability, trigger-deploy action | Normalized status verified across 3 providers |
+| **6. Providers+** | Vercel + Cloudflare adapters, Vercel observability, trigger-deploy action; first `ArtifactProvider` (GHCR/GitHub Packages via existing GitHub auth) enriching derived Artifact nodes with version history + publish metadata | Normalized status verified across 3 providers; registry metadata merges into existing lineage without model changes |
 | **7. Polish** | Settings full CRUD + reference pickers + connection tests + diff preview, layout presets UX, audit viewer, empty/degraded states, keyboard map | Design QA against §8 |
 
 **A note on scope discipline:** this document is now the architectural north star, not a backlog. The biggest remaining risk is the spec becoming more sophisticated than the software needs to be. Resist expanding it; let further sophistication be earned by the working application, and fold learnings back here only when code proves them.
@@ -628,3 +664,5 @@ Phase 0 is deliberately a **vertical slice**, not a horizontal foundation: the d
 8. Palette index scale: at what workspace size (pods churn constantly) do we cap leaf-object indexing and fall back to on-demand descent? (Spec assumes full index ≤ ~2k URIs.)
 9. Owners: is `CODEOWNERS` sufficient as the v1 ownership source, or is a config-level `owners` field needed for teams that don't maintain it?
 10. Inference trust: should inferred bindings require one-time acknowledgment in the Resolution inspector before driving *actions* (a restart against an inferred workload match), or is provenance display enough?
+11. Which registries are actually in your stack (GHCR? ECR? Artifactory?) — determines the second `ArtifactProvider` after GHCR.
+12. Appetite for SBOM/SLSA provenance display on Artifact nodes once a registry provider lands, or is that v3 territory?
