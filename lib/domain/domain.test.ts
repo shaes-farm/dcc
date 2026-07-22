@@ -60,15 +60,22 @@ const fixtures = {
     name: "Acme Commerce",
   } satisfies Workspace,
 
+  /**
+   * Every reference field is populated, not left empty: an empty array
+   * satisfies any element type, so `[]` would hide a field pointing at an
+   * object that has no `uri` to reference in the first place.
+   */
   service: {
     uri: uri("service://checkout"),
     id: "checkout",
     status: "degraded",
     environments: [uri("env://qa")],
     apis: [uri("api://checkout/rest")],
-    dashboards: [],
-    healthChecks: [],
-    documents: [],
+    dashboards: [uri("dashboard://grafana/uid-errors")],
+    healthChecks: ["hc-checkout"],
+    documents: [
+      uri("doc://repo-md/checkout-svc/docs/adr/0017-extract-pricing.md"),
+    ],
     owners: ["@payments-team"],
     dependsOn: [uri("service://catalog")],
   } satisfies Service,
@@ -260,7 +267,7 @@ const fixtures = {
     kind: "adr",
     body: "# Extract pricing client\n",
     services: [uri("service://checkout")],
-    links: [],
+    links: [uri("doc://repo-md/checkout-svc/runbooks/checkout-oncall.md")],
   } satisfies Document,
 
   action: {

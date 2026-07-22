@@ -44,8 +44,13 @@ export interface Service {
   apis: Uri[];
   /** `dashboard` URIs measuring it. */
   dashboards: Uri[];
-  /** Health-check URIs probing it. */
-  healthChecks: Uri[];
+  /**
+   * Ids of the health checks probing it — not URIs. §3.2 defines no scheme for
+   * `HealthCheck`, so it carries no `uri` to reference (see the note in
+   * `git.ts`); config declares each check with an `id`, and that is what binds
+   * here until a scheme exists.
+   */
+  healthChecks: string[];
   /** `doc` URIs explaining it — ADRs, runbooks, READMEs (§6.5). */
   documents: Uri[];
   /** Owners, from CODEOWNERS in v1. Team handles, not user records. */
