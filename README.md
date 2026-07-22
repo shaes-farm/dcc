@@ -6,7 +6,7 @@
 
 **Pre-build.** There is no application code in this repository yet.
 
-The specification is frozen at **v0.4** and is the architectural north star: [docs/developer-control-center-spec.md](docs/developer-control-center-spec.md). Phase 0 is a deliberate vertical slice — domain model and URI codec, config load/validate, provider interfaces, the GitHub provider end-to-end, and a minimal service cockpit — rather than a horizontal foundation. If those concepts feel natural in a working app, everything else grows on top of them; if they don't, we find out in week one.
+The specification is frozen at **v0.4** and is the architectural north star: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Phase 0 is a deliberate vertical slice — domain model and URI codec, config load/validate, provider interfaces, the GitHub provider end-to-end, and a minimal service cockpit — rather than a horizontal foundation. If those concepts feel natural in a working app, everything else grows on top of them; if they don't, we find out in week one.
 
 ---
 
@@ -269,11 +269,11 @@ For v1, DCC is explicitly **not**:
 | **6** | More providers: Vercel, Cloudflare, artifact registries                                      |
 | **7** | Polish: full settings CRUD, layout preset UX, audit viewer, keyboard map                     |
 
-Full scope and exit criteria per phase are in §11 of [the spec](docs/developer-control-center-spec.md).
+Full scope and exit criteria per phase are in §11 of [the spec](docs/ARCHITECTURE.md).
 
 ## Documentation
 
-[docs/developer-control-center-spec.md](docs/developer-control-center-spec.md) is the product and technical specification — domain model, provider interfaces, configuration format, panel library, security model, and phasing. It is frozen at v0.4 and should be treated as the architectural north star rather than a backlog. Its §12 lists twelve open questions still worth answering.
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) is the product and technical specification — domain model, provider interfaces, configuration format, panel library, security model, and phasing. It is frozen at v0.4 and should be treated as the architectural north star rather than a backlog. Its §12 lists twelve open questions still worth answering.
 
 The biggest risk to this project is the spec becoming more sophisticated than the software needs to be. Further sophistication should be earned by the working application, and folded back into the spec only when code proves it.
 

@@ -1,0 +1,2159 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>DCC — Developer Control Center</title>
+    <template id="__bundler_thumbnail" data-bg-color="#0A0D12">
+      <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+        <rect width="1200" height="800" fill="#0A0D12"></rect>
+        <text
+          x="600"
+          y="430"
+          text-anchor="middle"
+          font-family="monospace"
+          font-weight="700"
+          font-size="260"
+          fill="#DEE5EE"
+        >
+          DC
+          <tspan fill="#34C6EC">C</tspan>
+        </text>
+      </svg>
+    </template>
+    <link rel="stylesheet" href="../../styles.css" />
+    <script
+      src="https://unpkg.com/react@18.3.1/umd/react.development.js"
+      integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"
+      integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"
+      integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"
+      crossorigin="anonymous"
+    ></script>
+    <script src="./data.js"></script>
+    <style>
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--bg-3);
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      function __dccBoot() {
+        if (window.__dccBooted) return;
+        if (!window.DCC_DATA || !document.getElementById("root")) {
+          setTimeout(__dccBoot, 60);
+          return;
+        }
+        window.__dccBooted = true;
+
+        // == core/Button ==
+        const V = {
+          primary: {
+            background: "var(--accent)",
+            color: "var(--accent-fg)",
+            border: "1px solid transparent",
+          },
+          secondary: {
+            background: "var(--bg-3)",
+            color: "var(--text-1)",
+            border: "1px solid var(--border-2)",
+          },
+          ghost: {
+            background: "transparent",
+            color: "var(--text-2)",
+            border: "1px solid transparent",
+          },
+          danger: {
+            background: "var(--status-failing-dim)",
+            color: "var(--status-failing)",
+            border: "1px solid rgba(248,81,73,.35)",
+          },
+        };
+        function Button({
+          variant = "secondary",
+          size = "md",
+          icon,
+          disabled,
+          children,
+          style,
+          ...rest
+        }) {
+          const [hover, setHover] = React.useState(false),
+            [press, setPress] = React.useState(false);
+          const base = V[variant] || V.secondary;
+          let bg = base.background,
+            color = base.color;
+          if (!disabled && hover) {
+            if (variant === "primary")
+              bg = press ? "var(--accent-press)" : "var(--accent-hover)";
+            else if (variant === "ghost") {
+              bg = "var(--bg-2)";
+              color = "var(--text-1)";
+            } else if (variant === "danger") bg = "rgba(248,81,73,.24)";
+            else bg = press ? "var(--bg-2)" : "#222D3B";
+          }
+          return (
+            <button
+              disabled={disabled}
+              onMouseEnter={() => setHover(true)}
+              onMouseLeave={() => {
+                setHover(false);
+                setPress(false);
+              }}
+              onMouseDown={() => setPress(true)}
+              onMouseUp={() => setPress(false)}
+              style={{
+                ...base,
+                background: bg,
+                color,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                height:
+                  size === "sm"
+                    ? 24
+                    : size === "lg"
+                      ? "var(--control-h-lg)"
+                      : "var(--control-h)",
+                padding: size === "sm" ? "0 8px" : "0 12px",
+                borderRadius: "var(--radius-1)",
+                fontFamily: "var(--font-ui)",
+                fontSize: size === "sm" ? "var(--fs-sm)" : "var(--fs-base)",
+                fontWeight: 500,
+                cursor: disabled ? "not-allowed" : "pointer",
+                opacity: disabled ? 0.45 : 1,
+                transition:
+                  "background var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)",
+                whiteSpace: "nowrap",
+                ...style,
+              }}
+              {...rest}
+            >
+              {icon ? (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    fontSize: "1em",
+                    lineHeight: 1,
+                  }}
+                >
+                  {icon}
+                </span>
+              ) : null}
+              {children}
+            </button>
+          );
+        }
+
+        // == core/IconButton ==
+        function IconButton({
+          label,
+          children,
+          active,
+          disabled,
+          style,
+          ...rest
+        }) {
+          const [hover, setHover] = React.useState(false);
+          return (
+            <button
+              aria-label={label}
+              title={label}
+              disabled={disabled}
+              onMouseEnter={() => setHover(true)}
+              onMouseLeave={() => setHover(false)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "var(--control-h)",
+                height: "var(--control-h)",
+                borderRadius: "var(--radius-1)",
+                border: "1px solid transparent",
+                background: active
+                  ? "var(--accent-dim)"
+                  : hover && !disabled
+                    ? "var(--bg-3)"
+                    : "transparent",
+                color: active
+                  ? "var(--accent)"
+                  : hover && !disabled
+                    ? "var(--text-1)"
+                    : "var(--text-2)",
+                cursor: disabled ? "not-allowed" : "pointer",
+                opacity: disabled ? 0.45 : 1,
+                fontSize: 14,
+                lineHeight: 1,
+                transition:
+                  "background var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)",
+                ...style,
+              }}
+              {...rest}
+            >
+              {children}
+            </button>
+          );
+        }
+
+        // == core/Input ==
+        function Input({ mono, invalid, style, ...rest }) {
+          const [focus, setFocus] = React.useState(false);
+          return (
+            <input
+              onFocus={() => setFocus(true)}
+              onBlur={() => setFocus(false)}
+              style={{
+                height: "var(--control-h)",
+                boxSizing: "border-box",
+                padding: "0 10px",
+                background: "var(--surface-input)",
+                color: "var(--text-1)",
+                border: `1px solid ${invalid ? "var(--status-failing)" : focus ? "var(--accent)" : "var(--border-2)"}`,
+                borderRadius: "var(--radius-1)",
+                fontFamily: mono ? "var(--font-mono)" : "var(--font-ui)",
+                fontSize: mono ? "var(--fs-sm)" : "var(--fs-base)",
+                outline: "none",
+                boxShadow: focus ? "var(--focus-ring)" : "none",
+                transition:
+                  "border-color var(--dur-fast) var(--ease-out),box-shadow var(--dur-fast) var(--ease-out)",
+                width: "100%",
+              }}
+              {...rest}
+            />
+          );
+        }
+
+        // == core/Select ==
+        function Select({ options = [], mono, style, ...rest }) {
+          const [focus, setFocus] = React.useState(false);
+          return (
+            <div
+              style={{
+                position: "relative",
+                display: "inline-block",
+                width: style?.width || "auto",
+                ...style,
+              }}
+            >
+              <select
+                onFocus={() => setFocus(true)}
+                onBlur={() => setFocus(false)}
+                style={{
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  height: "var(--control-h)",
+                  boxSizing: "border-box",
+                  padding: "0 26px 0 10px",
+                  background: "var(--surface-input)",
+                  color: "var(--text-1)",
+                  border: `1px solid ${focus ? "var(--accent)" : "var(--border-2)"}`,
+                  borderRadius: "var(--radius-1)",
+                  fontFamily: mono ? "var(--font-mono)" : "var(--font-ui)",
+                  fontSize: mono ? "var(--fs-sm)" : "var(--fs-base)",
+                  outline: "none",
+                  boxShadow: focus ? "var(--focus-ring)" : "none",
+                  cursor: "pointer",
+                  width: "100%",
+                }}
+                {...rest}
+              >
+                {options.map((o) =>
+                  typeof o === "string" ? (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ) : (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ),
+                )}
+              </select>
+              <span
+                style={{
+                  position: "absolute",
+                  right: 9,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  pointerEvents: "none",
+                  color: "var(--text-3)",
+                  fontSize: 9,
+                }}
+              >
+                ▾
+              </span>
+            </div>
+          );
+        }
+
+        // == core/Checkbox ==
+        function Checkbox({ checked, onChange, label, disabled }) {
+          return (
+            <label
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                cursor: disabled ? "not-allowed" : "pointer",
+                opacity: disabled ? 0.45 : 1,
+                fontSize: "var(--fs-base)",
+                color: "var(--text-1)",
+                userSelect: "none",
+              }}
+            >
+              <span
+                onClick={() => !disabled && onChange && onChange(!checked)}
+                role="checkbox"
+                aria-checked={!!checked}
+                style={{
+                  width: 15,
+                  height: 15,
+                  flex: "0 0 auto",
+                  borderRadius: 3,
+                  border: `1px solid ${checked ? "var(--accent)" : "var(--border-2)"}`,
+                  background: checked
+                    ? "var(--accent)"
+                    : "var(--surface-input)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--accent-fg)",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  transition:
+                    "background var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out)",
+                }}
+              >
+                {checked ? "✓" : ""}
+              </span>
+              {label}
+            </label>
+          );
+        }
+
+        // == core/Switch ==
+        function Switch({ checked, onChange, label, disabled }) {
+          return (
+            <label
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                cursor: disabled ? "not-allowed" : "pointer",
+                opacity: disabled ? 0.45 : 1,
+                fontSize: "var(--fs-base)",
+                color: "var(--text-1)",
+                userSelect: "none",
+              }}
+            >
+              <span
+                onClick={() => !disabled && onChange && onChange(!checked)}
+                role="switch"
+                aria-checked={!!checked}
+                style={{
+                  width: 30,
+                  height: 16,
+                  flex: "0 0 auto",
+                  borderRadius: "var(--radius-full)",
+                  background: checked ? "var(--accent)" : "var(--bg-3)",
+                  border: `1px solid ${checked ? "var(--accent)" : "var(--border-2)"}`,
+                  position: "relative",
+                  transition: "background var(--dur-med) var(--ease-out)",
+                }}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 1,
+                    left: checked ? 15 : 1,
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    background: checked ? "var(--accent-fg)" : "var(--text-2)",
+                    transition:
+                      "left var(--dur-med) var(--ease-out),background var(--dur-med) var(--ease-out)",
+                  }}
+                ></span>
+              </span>
+              {label}
+            </label>
+          );
+        }
+
+        // == status/StatusDot ==
+        const STATUS_COLORS = {
+          healthy: "var(--status-healthy)",
+          degraded: "var(--status-degraded)",
+          failing: "var(--status-failing)",
+          deploying: "var(--status-deploying)",
+          unknown: "var(--status-unknown)",
+        };
+        function StatusDot({ status = "unknown", size = 8, pulse }) {
+          return (
+            <span
+              aria-label={status}
+              title={status}
+              style={{
+                display: "inline-block",
+                width: size,
+                height: size,
+                borderRadius: "50%",
+                background: STATUS_COLORS[status] || STATUS_COLORS.unknown,
+                flex: "0 0 auto",
+                animation:
+                  pulse && status === "deploying"
+                    ? "dcc-pulse 1.6s ease-in-out infinite"
+                    : "none",
+              }}
+            >
+              <style>
+                {"@keyframes dcc-pulse{0%,100%{opacity:1}50%{opacity:.35}}"}
+              </style>
+            </span>
+          );
+        }
+
+        // == status/StatusBadge ==
+        const M = {
+          healthy: {
+            glyph: "✓",
+            c: "var(--status-healthy)",
+            bg: "var(--status-healthy-dim)",
+          },
+          degraded: {
+            glyph: "⚠",
+            c: "var(--status-degraded)",
+            bg: "var(--status-degraded-dim)",
+          },
+          failing: {
+            glyph: "⛔",
+            c: "var(--status-failing)",
+            bg: "var(--status-failing-dim)",
+          },
+          deploying: {
+            glyph: "⏳",
+            c: "var(--status-deploying)",
+            bg: "var(--status-deploying-dim)",
+          },
+          unknown: {
+            glyph: "○",
+            c: "var(--status-unknown)",
+            bg: "var(--status-unknown-dim)",
+          },
+        };
+        function StatusBadge({ status = "unknown", children }) {
+          const s = M[status] || M.unknown;
+          return (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                height: 18,
+                padding: "0 8px",
+                borderRadius: "var(--radius-full)",
+                background: s.bg,
+                color: s.c,
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--fs-xs)",
+                fontWeight: 500,
+                whiteSpace: "nowrap",
+                lineHeight: 1,
+              }}
+            >
+              <span aria-hidden="true">{s.glyph}</span>
+              {children || status}
+            </span>
+          );
+        }
+
+        // == status/Tag ==
+        function Tag({ children, accent }) {
+          return (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                height: 18,
+                padding: "0 6px",
+                borderRadius: "var(--radius-1)",
+                background: accent ? "var(--accent-dim)" : "var(--bg-3)",
+                color: accent ? "var(--accent)" : "var(--text-2)",
+                border: `1px solid ${accent ? "rgba(52,198,236,.3)" : "var(--border-1)"}`,
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--fs-2xs)",
+                lineHeight: 1,
+                whiteSpace: "nowrap",
+                letterSpacing: ".02em",
+              }}
+            >
+              {children}
+            </span>
+          );
+        }
+
+        // == status/UriChip ==
+        function UriChip({ uri, onClick }) {
+          const [hover, setHover] = React.useState(false);
+          const i = uri.indexOf("://");
+          const scheme = i > 0 ? uri.slice(0, i) : "";
+          const rest = i > 0 ? uri.slice(i) : uri;
+          return (
+            <span
+              onClick={onClick}
+              onMouseEnter={() => setHover(true)}
+              onMouseLeave={() => setHover(false)}
+              title="Copy link · paste in palette to jump"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                maxWidth: "100%",
+                height: 20,
+                padding: "0 7px",
+                borderRadius: "var(--radius-1)",
+                background: hover ? "var(--bg-3)" : "var(--bg-2)",
+                border: `1px solid ${hover ? "var(--border-2)" : "var(--border-1)"}`,
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--fs-xs)",
+                cursor: onClick ? "pointer" : "default",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                transition: "background var(--dur-fast) var(--ease-out)",
+              }}
+            >
+              <span style={{ color: "var(--accent)" }}>{scheme}</span>
+              <span
+                style={{
+                  color: "var(--text-2)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {rest}
+              </span>
+            </span>
+          );
+        }
+
+        // == panels/Panel ==
+        function Panel({ title, asOf, actions, children, pad = true, style }) {
+          return (
+            <section
+              style={{
+                background: "var(--surface-panel)",
+                border: "1px solid var(--border-1)",
+                borderRadius: "var(--radius-2)",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+                minWidth: 0,
+                ...style,
+              }}
+            >
+              <header
+                style={{
+                  height: "var(--panel-header-h)",
+                  flex: "0 0 auto",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "0 10px",
+                  borderBottom: "1px solid var(--border-1)",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "var(--fs-base)",
+                    fontWeight: 600,
+                    color: "var(--text-1)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {title}
+                </span>
+                <span style={{ flex: 1 }}></span>
+                {asOf ? (
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "var(--fs-2xs)",
+                      color: "var(--text-3)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    as of {asOf}
+                  </span>
+                ) : null}
+                {actions}
+              </header>
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflow: "auto",
+                  padding: pad ? 10 : 0,
+                }}
+              >
+                {children}
+              </div>
+            </section>
+          );
+        }
+
+        // == panels/EmptyState ==
+        function EmptyState({ message, action }) {
+          return (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                padding: "28px 16px",
+                textAlign: "center",
+              }}
+            >
+              <span
+                style={{ color: "var(--text-3)", fontSize: "var(--fs-base)" }}
+              >
+                {message}
+              </span>
+              {action ? (
+                <span style={{ display: "inline-flex" }}>{action}</span>
+              ) : null}
+            </div>
+          );
+        }
+
+        // == panels/ErrorCard ==
+        function ErrorCard({ title = "Provider unreachable", detail, action }) {
+          return (
+            <div
+              style={{
+                background: "var(--status-failing-dim)",
+                border: "1px solid rgba(248,81,73,.3)",
+                borderRadius: "var(--radius-2)",
+                padding: "12px 14px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  color: "var(--status-failing)",
+                  fontWeight: 600,
+                  fontSize: "var(--fs-base)",
+                }}
+              >
+                <span aria-hidden="true">⛔</span>
+                {title}
+              </div>
+              {detail ? (
+                <div
+                  style={{
+                    color: "var(--text-2)",
+                    fontSize: "var(--fs-sm)",
+                    fontFamily: "var(--font-mono)",
+                    lineHeight: "var(--lh-normal)",
+                  }}
+                >
+                  {detail}
+                </div>
+              ) : null}
+              {action ? <div style={{ marginTop: 2 }}>{action}</div> : null}
+            </div>
+          );
+        }
+
+        // == panels/StatusBar ==
+        function StatusBar({
+          workspace = "Acme Commerce",
+          preset = "Debugging",
+          polling = true,
+          issues = 0,
+          clock = "14:32",
+        }) {
+          const ok = issues === 0;
+          return (
+            <footer
+              style={{
+                height: "var(--statusbar-h)",
+                boxSizing: "border-box",
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                padding: "0 12px",
+                background: "var(--bg-1)",
+                borderTop: "1px solid var(--border-1)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--fs-xs)",
+                color: "var(--text-2)",
+              }}
+            >
+              <span style={{ color: "var(--text-1)", fontWeight: 600 }}>
+                {workspace}
+              </span>
+              <span style={{ color: "var(--text-3)" }}>layout: {preset}</span>
+              <span
+                style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+              >
+                <StatusDot status={polling ? "healthy" : "unknown"} size={6} />{" "}
+                polling {polling ? "on" : "paused"}
+              </span>
+              <span style={{ flex: 1 }}></span>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  color: ok
+                    ? "var(--status-healthy)"
+                    : "var(--status-degraded)",
+                }}
+              >
+                <span aria-hidden="true">{ok ? "✓" : "⚠"}</span>
+                {ok ? "system OK" : `${issues} issues`}
+              </span>
+              <span style={{ color: "var(--text-3)" }}>{clock}</span>
+            </footer>
+          );
+        }
+
+        // ---- WorkspaceHealth.jsx ----
+        function WorkspaceHealth({ onOpenService }) {
+          const D = window.DCC_DATA;
+          const stat = (n, f, c) => (
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--fs-2xl)",
+                  fontWeight: 600,
+                  lineHeight: 1.25,
+                  color: c || "var(--text-1)",
+                }}
+              >
+                {n}
+              </span>
+              <span
+                style={{ fontSize: "var(--fs-sm)", color: "var(--text-2)" }}
+              >
+                {f}
+              </span>
+            </div>
+          );
+          return (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
+                padding: 16,
+                overflow: "auto",
+                height: "100%",
+                boxSizing: "border-box",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+                <span style={{ fontSize: "var(--fs-xl)", fontWeight: 600 }}>
+                  {D.workspace}
+                </span>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    color: "var(--status-failing)",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "var(--fs-sm)",
+                  }}
+                >
+                  <StatusDot status="failing" /> 5 issues
+                </span>
+                <span style={{ flex: 1 }}></span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "var(--fs-2xs)",
+                    color: "var(--text-3)",
+                  }}
+                >
+                  as of 4s ago
+                </span>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(5,1fr)",
+                  gap: 12,
+                  padding: "14px 16px",
+                  background: "var(--bg-1)",
+                  border: "1px solid var(--border-1)",
+                  borderRadius: "var(--radius-2)",
+                }}
+              >
+                {stat(
+                  "18",
+                  <span>
+                    services ·{" "}
+                    <span style={{ color: "var(--status-failing)" }}>
+                      3 unhealthy
+                    </span>
+                  </span>,
+                )}
+                {stat(
+                  "23",
+                  <span>
+                    repositories ·{" "}
+                    <span style={{ color: "var(--status-failing)" }}>
+                      4 red CI
+                    </span>
+                  </span>,
+                )}
+                {stat("147", "pods · 98% healthy")}
+                {stat(
+                  "11",
+                  <span>
+                    security alerts ·{" "}
+                    <span style={{ color: "var(--status-failing)" }}>
+                      2 critical
+                    </span>
+                  </span>,
+                )}
+                {stat("2", "deploys running", "var(--status-deploying)")}
+              </div>
+              <Panel title="Attention needed" asOf="4s ago" pad={false}>
+                {D.attention.map((a) => (
+                  <div
+                    key={a.uri}
+                    onClick={() => onOpenService(a.svc)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "8px 12px",
+                      borderBottom: "1px solid var(--border-1)",
+                      cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "var(--bg-2)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "transparent")
+                    }
+                  >
+                    <span
+                      style={{
+                        color: `var(--status-${a.sev})`,
+                        fontSize: 14,
+                        width: 18,
+                        textAlign: "center",
+                      }}
+                    >
+                      {a.glyph}
+                    </span>
+                    <span
+                      style={{
+                        fontWeight: 600,
+                        fontSize: "var(--fs-base)",
+                        width: 130,
+                        flex: "0 0 auto",
+                      }}
+                    >
+                      {a.what}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "var(--fs-sm)",
+                        color: "var(--text-2)",
+                        flex: 1,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {a.detail}
+                    </span>
+                    <UriChip uri={a.uri} />
+                    <a
+                      style={{ fontSize: "var(--fs-sm)", whiteSpace: "nowrap" }}
+                    >
+                      → open
+                    </a>
+                  </div>
+                ))}
+              </Panel>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 12,
+                }}
+              >
+                <Panel title="Health checks" asOf="12s ago" pad={false}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 0,
+                    }}
+                  >
+                    {D.healthChecks.map((h) => (
+                      <div
+                        key={h.name}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          padding: "7px 12px",
+                          borderBottom: "1px solid var(--border-1)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: h.ok
+                              ? "var(--status-healthy)"
+                              : "var(--status-failing)",
+                          }}
+                        >
+                          {h.ok ? "✓" : "⛔"}
+                        </span>
+                        <span style={{ fontSize: "var(--fs-sm)", flex: 1 }}>
+                          {h.name}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: "var(--fs-xs)",
+                            color: h.ok
+                              ? "var(--text-3)"
+                              : "var(--status-failing)",
+                          }}
+                        >
+                          {h.ms}ms
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </Panel>
+                <Panel title="Deploys running" asOf="9s ago" pad={false}>
+                  {[
+                    [
+                      "storefront",
+                      "qa",
+                      "⏳ rolling out · 2/3 pods",
+                      "deploying",
+                    ],
+                    ["checkout", "prod", "⏳ BUILDING · 1m 12s", "deploying"],
+                  ].map(([s, e, d, st]) => (
+                    <div
+                      key={s + e}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        padding: "8px 12px",
+                        borderBottom: "1px solid var(--border-1)",
+                      }}
+                    >
+                      <StatusDot status={st} pulse />
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          fontSize: "var(--fs-base)",
+                          width: 110,
+                        }}
+                      >
+                        {s}
+                      </span>
+                      <code
+                        style={{
+                          fontSize: "var(--fs-xs)",
+                          color: "var(--text-3)",
+                        }}
+                      >
+                        {e}
+                      </code>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "var(--fs-sm)",
+                          color: "var(--status-deploying)",
+                          flex: 1,
+                        }}
+                      >
+                        {d}
+                      </span>
+                    </div>
+                  ))}
+                  <div style={{ padding: "8px 12px" }}>
+                    <Button variant="ghost" size="sm">
+                      View all deploys
+                    </Button>
+                  </div>
+                </Panel>
+              </div>
+            </div>
+          );
+        }
+        Object.assign(window, { WorkspaceHealth });
+
+        // ---- ServiceCockpit.jsx ----
+        function LineageStrip() {
+          const node = (children) => (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                background: "var(--bg-2)",
+                border: "1px solid var(--border-1)",
+                borderRadius: "var(--radius-1)",
+                padding: "4px 9px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {children}
+            </span>
+          );
+          const arr = <span style={{ color: "var(--text-3)" }}>→</span>;
+          return (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 12px",
+                background: "var(--bg-1)",
+                border: "1px solid var(--border-1)",
+                borderRadius: "var(--radius-2)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--fs-sm)",
+                overflowX: "auto",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "var(--fs-2xs)",
+                  color: "var(--text-3)",
+                  textTransform: "uppercase",
+                  letterSpacing: "var(--tracking-overline)",
+                  fontFamily: "var(--font-ui)",
+                  flex: "0 0 auto",
+                }}
+              >
+                Lineage
+              </span>
+              {node(
+                <React.Fragment>
+                  PR #248{" "}
+                  <span style={{ color: "var(--text-3)" }}>
+                    merged 2h · @alice
+                  </span>
+                </React.Fragment>,
+              )}
+              {arr}
+              {node(
+                <React.Fragment>
+                  Build #1842{" "}
+                  <span style={{ color: "var(--status-healthy)" }}>✓</span>
+                </React.Fragment>,
+              )}
+              {arr}
+              {node(
+                <React.Fragment>
+                  checkout:3.7.12{" "}
+                  <span style={{ color: "var(--text-3)" }}>sha256:4bf9…</span>
+                </React.Fragment>,
+              )}
+              {arr}
+              {node(
+                <React.Fragment>
+                  qa <span style={{ color: "var(--status-healthy)" }}>✓</span>
+                </React.Fragment>,
+              )}
+              {node(
+                <React.Fragment>
+                  staging{" "}
+                  <span style={{ color: "var(--status-healthy)" }}>✓</span>
+                </React.Fragment>,
+              )}
+              {node(
+                <React.Fragment>
+                  prod{" "}
+                  <span style={{ color: "var(--status-deploying)" }}>⏳</span>
+                </React.Fragment>,
+              )}
+            </div>
+          );
+        }
+        function ContextPanel() {
+          const D = window.DCC_DATA;
+          return (
+            <Panel title="Context" asOf="20s ago" pad={false}>
+              {D.context.map(([k, v, uri, prov]) => (
+                <div
+                  key={k}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "6px 10px",
+                    borderBottom: "1px solid var(--border-1)",
+                  }}
+                  title={`provenance: ${prov} · ${uri}`}
+                >
+                  <span
+                    style={{
+                      fontSize: "var(--fs-xs)",
+                      color: "var(--text-3)",
+                      width: 78,
+                      flex: "0 0 auto",
+                    }}
+                  >
+                    {k}
+                  </span>
+                  <a
+                    style={{
+                      fontSize: "var(--fs-sm)",
+                      color: "var(--text-1)",
+                      flex: 1,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {v}
+                  </a>
+                  <Tag>{prov}</Tag>
+                </div>
+              ))}
+            </Panel>
+          );
+        }
+        function ServiceCockpit({ onOpenPod, onRestart }) {
+          const D = window.DCC_DATA;
+          const th = {
+            fontSize: "var(--fs-2xs)",
+            color: "var(--text-3)",
+            textTransform: "uppercase",
+            letterSpacing: "var(--tracking-overline)",
+            textAlign: "left",
+            fontWeight: 500,
+            padding: "5px 10px",
+            borderBottom: "1px solid var(--border-1)",
+            background: "var(--bg-2)",
+          };
+          const td = {
+            padding: "6px 10px",
+            borderBottom: "1px solid var(--border-1)",
+            fontSize: "var(--fs-sm)",
+          };
+          return (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                padding: 16,
+                overflow: "auto",
+                height: "100%",
+                boxSizing: "border-box",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: "var(--fs-xl)", fontWeight: 600 }}>
+                  Checkout Service
+                </span>
+                <StatusBadge status="failing">degraded · qa</StatusBadge>
+                <UriChip uri="service://checkout" />
+                <span style={{ flex: 1 }}></span>
+                <Button variant="primary" size="sm" onClick={onRestart}>
+                  ⚡ Restart workload
+                </Button>
+                <Button size="sm">Re-run failed checks</Button>
+              </div>
+              <LineageStrip />
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1.1fr 1.3fr 1fr",
+                  gridTemplateRows: "auto auto",
+                  gap: 12,
+                  alignItems: "stretch",
+                }}
+              >
+                <Panel
+                  title="Repository · checkout-svc"
+                  asOf="38s ago"
+                  pad={false}
+                  actions={<IconButton label="Refresh">⟳</IconButton>}
+                >
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        <th style={th}>PR</th>
+                        <th style={th}>checks</th>
+                        <th style={th}>age</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {D.prs.map((p) => (
+                        <tr key={p.n}>
+                          <td style={td}>
+                            <a style={{ cursor: "pointer" }}>#{p.n}</a>{" "}
+                            <span style={{ color: "var(--text-2)" }}>
+                              {p.title}
+                            </span>
+                            <br />
+                            <span
+                              style={{
+                                fontFamily: "var(--font-mono)",
+                                fontSize: "var(--fs-2xs)",
+                                color: "var(--text-3)",
+                              }}
+                            >
+                              {p.state} · {p.author}
+                            </span>
+                          </td>
+                          <td style={td}>
+                            <StatusBadge status={p.checks} />
+                          </td>
+                          <td
+                            style={{
+                              ...td,
+                              fontFamily: "var(--font-mono)",
+                              color: "var(--text-3)",
+                            }}
+                          >
+                            {p.age}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </Panel>
+                <Panel
+                  title="Pods (qa)"
+                  asOf="8s ago"
+                  pad={false}
+                  actions={<IconButton label="Refresh">⟳</IconButton>}
+                >
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        <th style={th}>pod</th>
+                        <th style={th}>phase</th>
+                        <th style={th}>restarts</th>
+                        <th style={th}>age</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {D.pods.map((p) => (
+                        <tr
+                          key={p.name}
+                          onClick={() => onOpenPod(p)}
+                          style={{
+                            cursor: "pointer",
+                            background:
+                              p.status === "failing"
+                                ? "var(--status-failing-dim)"
+                                : "transparent",
+                          }}
+                        >
+                          <td style={{ ...td, fontFamily: "var(--font-mono)" }}>
+                            {p.name}
+                          </td>
+                          <td style={td}>
+                            <span
+                              style={{ color: `var(--status-${p.status})` }}
+                            >
+                              {p.status === "failing" ? "⛔" : "✓"} {p.label}
+                            </span>
+                          </td>
+                          <td
+                            style={{
+                              ...td,
+                              fontFamily: "var(--font-mono)",
+                              color:
+                                p.restarts > 3
+                                  ? "var(--status-failing)"
+                                  : "var(--text-3)",
+                            }}
+                          >
+                            {p.restarts}
+                          </td>
+                          <td
+                            style={{
+                              ...td,
+                              fontFamily: "var(--font-mono)",
+                              color: "var(--text-3)",
+                            }}
+                          >
+                            {p.age}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div
+                    style={{
+                      padding: "6px 10px",
+                      fontSize: "var(--fs-2xs)",
+                      color: "var(--text-3)",
+                      fontFamily: "var(--font-mono)",
+                    }}
+                  >
+                    crash-looping pods float to the top
+                  </div>
+                </Panel>
+                <Panel title="Health & Metrics" asOf="15s ago">
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "var(--fs-sm)",
+                    }}
+                  >
+                    <div>
+                      hc{" "}
+                      <span style={{ color: "var(--status-failing)" }}>
+                        ⛔ 2140ms
+                      </span>
+                    </div>
+                    <div>
+                      err{" "}
+                      <span style={{ color: "var(--status-failing)" }}>
+                        2.3% ↑
+                      </span>{" "}
+                      <span style={{ color: "var(--text-3)" }}>(was 0.2%)</span>
+                    </div>
+                    <div>
+                      p95{" "}
+                      <span style={{ color: "var(--status-degraded)" }}>
+                        480ms
+                      </span>{" "}
+                      <span style={{ color: "var(--text-3)" }}>p50 88ms</span>
+                    </div>
+                    <svg
+                      width="100%"
+                      height="46"
+                      viewBox="0 0 220 46"
+                      preserveAspectRatio="none"
+                      style={{ marginTop: 4 }}
+                    >
+                      <polyline
+                        points="0,40 30,39 60,40 90,38 120,39 150,14 180,10 220,8"
+                        fill="none"
+                        stroke="var(--status-failing)"
+                        strokeWidth="1.5"
+                      />
+                      <line
+                        x1="150"
+                        y1="0"
+                        x2="150"
+                        y2="46"
+                        stroke="var(--status-deploying)"
+                        strokeWidth="1"
+                        strokeDasharray="3 3"
+                      />
+                    </svg>
+                    <div
+                      style={{
+                        fontSize: "var(--fs-2xs)",
+                        color: "var(--status-deploying)",
+                      }}
+                    >
+                      ┆ deploy 14:32 · a1b2c3d
+                    </div>
+                  </div>
+                </Panel>
+                <Panel title="Deploys" asOf="30s ago" pad={false}>
+                  {D.deploys.map((d) => (
+                    <div
+                      key={d.env}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "7px 10px",
+                        borderBottom: "1px solid var(--border-1)",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "var(--fs-sm)",
+                      }}
+                    >
+                      <StatusDot
+                        status={d.status}
+                        pulse={d.status === "deploying"}
+                      />
+                      <span style={{ width: 56 }}>{d.env}</span>
+                      <span style={{ color: "var(--text-3)" }}>{d.time}</span>
+                      <span style={{ color: "var(--text-2)" }}>{d.sha}</span>
+                    </div>
+                  ))}
+                </Panel>
+                <Panel
+                  title="Logs (tail)"
+                  asOf="live"
+                  pad={false}
+                  actions={<IconButton label="Pause tail">⏸</IconButton>}
+                >
+                  <pre
+                    style={{
+                      margin: 0,
+                      padding: "8px 10px",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "var(--fs-xs)",
+                      lineHeight: "var(--lh-log)",
+                      color: "var(--text-2)",
+                      overflow: "auto",
+                    }}
+                  >
+                    {D.logs.map((l, i) => (
+                      <div key={i}>
+                        <span style={{ color: "var(--text-3)" }}>{l.t}</span>{" "}
+                        <span
+                          style={{
+                            color:
+                              l.lvl === "ERROR"
+                                ? "var(--status-failing)"
+                                : l.lvl === "WARN"
+                                  ? "var(--status-degraded)"
+                                  : "var(--text-2)",
+                          }}
+                        >
+                          {l.lvl}
+                        </span>{" "}
+                        {l.msg}
+                      </div>
+                    ))}
+                  </pre>
+                </Panel>
+                <ContextPanel />
+              </div>
+            </div>
+          );
+        }
+        Object.assign(window, { ServiceCockpit, LineageStrip, ContextPanel });
+
+        // ---- Palette.jsx ----
+        function Palette({ onClose, onOpenService }) {
+          const D = window.DCC_DATA;
+          const [q, setQ] = React.useState("");
+          const [sel, setSel] = React.useState(0);
+          const inputRef = React.useRef(null);
+          React.useEffect(() => {
+            inputRef.current && inputRef.current.focus();
+          }, []);
+          const results = D.paletteIndex.filter((r) =>
+            r.label.toLowerCase().includes(q.toLowerCase()),
+          );
+          const pick = (r) => {
+            if (r.kind === "service" || r.uri.includes("checkout"))
+              onOpenService("checkout");
+            onClose();
+          };
+          const onKey = (e) => {
+            if (e.key === "Escape") onClose();
+            else if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setSel((s) => Math.min(s + 1, results.length - 1));
+            } else if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setSel((s) => Math.max(s - 1, 0));
+            } else if (e.key === "Enter" && results[sel]) pick(results[sel]);
+          };
+          return (
+            <div
+              onClick={onClose}
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "var(--scrim)",
+                zIndex: 50,
+                display: "flex",
+                justifyContent: "center",
+                paddingTop: 110,
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: 560,
+                  height: "fit-content",
+                  background: "var(--bg-1)",
+                  border: "1px solid var(--border-2)",
+                  borderRadius: "var(--radius-3)",
+                  boxShadow: "var(--shadow-overlay)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "10px 12px",
+                    borderBottom: "1px solid var(--border-1)",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "var(--text-3)",
+                      fontFamily: "var(--font-mono)",
+                    }}
+                  >
+                    ›
+                  </span>
+                  <input
+                    ref={inputRef}
+                    value={q}
+                    onChange={(e) => {
+                      setQ(e.target.value);
+                      setSel(0);
+                    }}
+                    onKeyDown={onKey}
+                    placeholder="Jump to anything — or paste a URI…"
+                    style={{
+                      flex: 1,
+                      background: "transparent",
+                      border: "none",
+                      outline: "none",
+                      color: "var(--text-1)",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "var(--fs-base)",
+                    }}
+                  />
+                  <kbd
+                    style={{
+                      background: "var(--bg-3)",
+                      border: "1px solid var(--border-2)",
+                      borderRadius: 3,
+                      padding: "1px 5px",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "var(--fs-2xs)",
+                      color: "var(--text-3)",
+                    }}
+                  >
+                    esc
+                  </kbd>
+                </div>
+                <div>
+                  {results.length === 0 ? (
+                    <div
+                      style={{
+                        padding: "14px 12px",
+                        color: "var(--text-3)",
+                        fontSize: "var(--fs-sm)",
+                      }}
+                    >
+                      No matches — try a service name or paste a URI
+                    </div>
+                  ) : (
+                    results.map((r, i) => (
+                      <div
+                        key={r.uri}
+                        onClick={() => pick(r)}
+                        onMouseEnter={() => setSel(i)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 9,
+                          padding: "7px 12px",
+                          cursor: "pointer",
+                          background:
+                            i === sel ? "var(--accent-dim)" : "transparent",
+                          borderLeft:
+                            i === sel
+                              ? "2px solid var(--accent)"
+                              : "2px solid transparent",
+                        }}
+                      >
+                        {r.dot ? (
+                          <StatusDot status={r.dot} size={7} />
+                        ) : (
+                          <span style={{ width: 7 }}></span>
+                        )}
+                        <span
+                          style={{
+                            fontSize: "var(--fs-base)",
+                            color:
+                              r.kind === "action"
+                                ? "var(--accent)"
+                                : "var(--text-1)",
+                            flex: 1,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {r.label}
+                        </span>
+                        <Tag>{r.kind}</Tag>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div
+                  style={{
+                    padding: "6px 12px",
+                    borderTop: "1px solid var(--border-1)",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "var(--fs-2xs)",
+                    color: "var(--text-3)",
+                    display: "flex",
+                    gap: 12,
+                  }}
+                >
+                  <span>↑↓ navigate</span>
+                  <span>↵ open</span>
+                  <span>actions confirm before running</span>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        function ConfirmDialog({ onClose }) {
+          const [typed, setTyped] = React.useState("");
+          return (
+            <div
+              onClick={onClose}
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "var(--scrim)",
+                zIndex: 60,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: 440,
+                  background: "var(--bg-1)",
+                  border: "1px solid var(--border-2)",
+                  borderRadius: "var(--radius-3)",
+                  boxShadow: "var(--shadow-overlay)",
+                  padding: 16,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 12,
+                }}
+              >
+                <div style={{ fontSize: "var(--fs-lg)", fontWeight: 600 }}>
+                  Restart workload?
+                </div>
+                <div
+                  style={{
+                    fontSize: "var(--fs-base)",
+                    color: "var(--text-2)",
+                    lineHeight: "var(--lh-normal)",
+                  }}
+                >
+                  Rollout restart of{" "}
+                  <code style={{ color: "var(--text-1)" }}>
+                    deployment/checkout
+                  </code>{" "}
+                  in <code style={{ color: "var(--text-1)" }}>qa</code>{" "}
+                  <Tag>shared</Tag> via <code>k8s-qa</code>. Pods are never
+                  deleted directly. The action is audit-logged.
+                </div>
+                <UriChip uri="action://restartWorkload?target=workload://qa/checkout/deployment/checkout" />
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <Button variant="ghost" onClick={onClose}>
+                    Cancel
+                  </Button>
+                  <Button variant="primary" onClick={onClose}>
+                    Restart workload
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        Object.assign(window, { Palette, ConfirmDialog });
+
+        // ---- PodDrawer.jsx ----
+        function PodDrawer({ pod, onClose, onRestart }) {
+          const D = window.DCC_DATA;
+          const sec = {
+            fontSize: "var(--fs-2xs)",
+            color: "var(--text-3)",
+            textTransform: "uppercase",
+            letterSpacing: "var(--tracking-overline)",
+            margin: "10px 0 6px",
+          };
+          return (
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                right: 0,
+                bottom: "var(--statusbar-h)",
+                width: "var(--drawer-w)",
+                background: "var(--bg-1)",
+                borderLeft: "1px solid var(--border-2)",
+                boxShadow: "var(--shadow-drawer)",
+                zIndex: 40,
+                display: "flex",
+                flexDirection: "column",
+                animation: "dcc-slide var(--dur-med) var(--ease-out)",
+              }}
+            >
+              <style>
+                {
+                  "@keyframes dcc-slide{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}"
+                }
+              </style>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 12px",
+                  borderBottom: "1px solid var(--border-1)",
+                }}
+              >
+                <code style={{ fontSize: "var(--fs-base)", fontWeight: 600 }}>
+                  {pod.name}
+                </code>
+                <StatusBadge status={pod.status}>{pod.label}</StatusBadge>
+                <span style={{ flex: 1 }}></span>
+                <IconButton label="Close" onClick={onClose}>
+                  ✕
+                </IconButton>
+              </div>
+              <div
+                style={{ flex: 1, overflow: "auto", padding: "4px 12px 12px" }}
+              >
+                <div style={sec}>Identity</div>
+                <UriChip uri="pod://qa/checkout/checkout-6df4cbf8b" />
+                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                  <Tag>qa</Tag>
+                  <Tag>shared</Tag>
+                  <Tag>k8s-qa</Tag>
+                </div>
+                <div style={sec}>Recent events</div>
+                <pre
+                  style={{
+                    margin: 0,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "var(--fs-xs)",
+                    lineHeight: "var(--lh-log)",
+                    color: "var(--text-2)",
+                  }}
+                >
+                  <div>
+                    14:33{" "}
+                    <span style={{ color: "var(--status-failing)" }}>
+                      BackOff
+                    </span>{" "}
+                    restarting failed container
+                  </div>
+                  <div>14:32 Pulled image checkout:3.7.12</div>
+                  <div>
+                    14:32{" "}
+                    <span style={{ color: "var(--status-failing)" }}>
+                      Unhealthy
+                    </span>{" "}
+                    liveness probe failed: 500
+                  </div>
+                </pre>
+                <div style={sec}>Env vars (values masked)</div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 3,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "var(--fs-xs)",
+                  }}
+                >
+                  {[
+                    "DATABASE_URL",
+                    "PRICING_BASE_URL",
+                    "CHECKOUT_QA_TOKEN",
+                  ].map((v) => (
+                    <div key={v}>
+                      <span style={{ color: "var(--syn-key)" }}>{v}</span>
+                      <span style={{ color: "var(--text-3)" }}>=••••••••</span>
+                    </div>
+                  ))}
+                </div>
+                <div
+                  style={{
+                    ...sec,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
+                  Log tail <Switch checked={true} label="" />
+                </div>
+                <pre
+                  style={{
+                    margin: 0,
+                    background: "var(--bg-0)",
+                    border: "1px solid var(--border-1)",
+                    borderRadius: "var(--radius-1)",
+                    padding: "8px 10px",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "var(--fs-xs)",
+                    lineHeight: "var(--lh-log)",
+                    color: "var(--text-2)",
+                    overflow: "auto",
+                    maxHeight: 130,
+                  }}
+                >
+                  {D.logs.slice(0, 4).map((l, i) => (
+                    <div key={i}>
+                      <span style={{ color: "var(--text-3)" }}>{l.t}</span>{" "}
+                      <span
+                        style={{
+                          color:
+                            l.lvl === "ERROR"
+                              ? "var(--status-failing)"
+                              : l.lvl === "WARN"
+                                ? "var(--status-degraded)"
+                                : "var(--text-2)",
+                        }}
+                      >
+                        {l.lvl}
+                      </span>{" "}
+                      {l.msg}
+                    </div>
+                  ))}
+                </pre>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  padding: "10px 12px",
+                  borderTop: "1px solid var(--border-1)",
+                }}
+              >
+                <Button variant="primary" size="sm" onClick={onRestart}>
+                  ⚡ Restart workload
+                </Button>
+                <Button size="sm">View manifest</Button>
+                <span style={{ flex: 1 }}></span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "var(--fs-2xs)",
+                    color: "var(--text-3)",
+                    alignSelf: "center",
+                  }}
+                >
+                  as of 3s ago
+                </span>
+              </div>
+            </div>
+          );
+        }
+        Object.assign(window, { PodDrawer });
+
+        // ---- App.jsx ----
+        function Rail({ view, onNav, onPalette }) {
+          const D = window.DCC_DATA;
+          const sec = {
+            fontSize: "var(--fs-2xs)",
+            color: "var(--text-3)",
+            textTransform: "uppercase",
+            letterSpacing: "var(--tracking-overline)",
+            padding: "12px 12px 5px",
+            fontWeight: 500,
+          };
+          const item = (active) => ({
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "5px 12px",
+            cursor: "pointer",
+            fontSize: "var(--fs-base)",
+            color: active ? "var(--text-1)" : "var(--text-2)",
+            background: active ? "var(--accent-dim)" : "transparent",
+            borderLeft: active
+              ? "2px solid var(--accent)"
+              : "2px solid transparent",
+          });
+          return (
+            <nav
+              style={{
+                width: "var(--rail-w)",
+                flex: "0 0 auto",
+                background: "var(--bg-1)",
+                borderRight: "1px solid var(--border-1)",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "auto",
+              }}
+            >
+              <div
+                onClick={() => onNav("health")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "12px 12px",
+                  borderBottom: "1px solid var(--border-1)",
+                  cursor: "pointer",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontWeight: 700,
+                    fontSize: 15,
+                    letterSpacing: "-.02em",
+                  }}
+                >
+                  DC<span style={{ color: "var(--accent)" }}>C</span>
+                </span>
+                <span
+                  style={{
+                    fontSize: "var(--fs-sm)",
+                    color: "var(--text-2)",
+                    flex: 1,
+                  }}
+                >
+                  {D.workspace}
+                </span>
+                <StatusDot status="failing" />
+              </div>
+              <div
+                onClick={onPalette}
+                style={{
+                  margin: 10,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  height: 26,
+                  padding: "0 8px",
+                  background: "var(--bg-3)",
+                  border: "1px solid var(--border-1)",
+                  borderRadius: "var(--radius-1)",
+                  cursor: "pointer",
+                  color: "var(--text-3)",
+                  fontSize: "var(--fs-sm)",
+                }}
+              >
+                <span>Jump to…</span>
+                <span style={{ flex: 1 }}></span>
+                <kbd
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "var(--fs-2xs)",
+                    background: "var(--bg-2)",
+                    border: "1px solid var(--border-2)",
+                    borderRadius: 3,
+                    padding: "0 4px",
+                  }}
+                >
+                  ⌘K
+                </kbd>
+              </div>
+              <div
+                onClick={() => onNav("health")}
+                style={item(view === "health")}
+              >
+                <span
+                  style={{
+                    width: 8,
+                    textAlign: "center",
+                    color:
+                      view === "health" ? "var(--accent)" : "var(--text-3)",
+                  }}
+                >
+                  ◉
+                </span>
+                Workspace Health
+              </div>
+              <div style={sec}>Services</div>
+              {D.services.map((s) => (
+                <div
+                  key={s.id}
+                  onClick={() => onNav(s.id)}
+                  style={item(view === s.id)}
+                  onMouseEnter={(e) => {
+                    if (view !== s.id)
+                      e.currentTarget.style.background = "var(--bg-2)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (view !== s.id)
+                      e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  <StatusDot status={s.status} size={7} />
+                  <span
+                    style={{
+                      flex: 1,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {s.name}
+                  </span>
+                </div>
+              ))}
+              <div style={sec}>Lenses</div>
+              {D.lenses.map((l) => (
+                <div
+                  key={l}
+                  style={item(false)}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "var(--bg-2)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
+                >
+                  <span style={{ width: 8 }}></span>
+                  <span style={{ fontSize: "var(--fs-sm)" }}>{l}</span>
+                </div>
+              ))}
+              <div style={{ flex: 1 }}></div>
+              <div
+                style={{
+                  padding: "10px 12px",
+                  borderTop: "1px solid var(--border-1)",
+                  display: "flex",
+                  gap: 6,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Tag accent>On-call</Tag>
+                <Tag>Debugging</Tag>
+                <Tag>Tech-lead</Tag>
+              </div>
+            </nav>
+          );
+        }
+        function App() {
+          const [view, setView] = React.useState(
+            localStorage.getItem("dcc-kit-view") || "health",
+          );
+          const [palette, setPalette] = React.useState(false);
+          const [pod, setPod] = React.useState(null);
+          const [confirm, setConfirm] = React.useState(false);
+          const nav = (v) => {
+            setView(v);
+            setPod(null);
+            try {
+              localStorage.setItem("dcc-kit-view", v);
+            } catch (e) {}
+          };
+          React.useEffect(() => {
+            const h = (e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+                e.preventDefault();
+                setPalette((p) => !p);
+              }
+            };
+            window.addEventListener("keydown", h);
+            return () => window.removeEventListener("keydown", h);
+          }, []);
+          const cockpit = view !== "health";
+          return (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100vh",
+                background: "var(--bg-0)",
+              }}
+            >
+              <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+                <Rail
+                  view={view}
+                  onNav={nav}
+                  onPalette={() => setPalette(true)}
+                />
+                <main style={{ flex: 1, minWidth: 0 }}>
+                  {cockpit ? (
+                    <ServiceCockpit
+                      onOpenPod={setPod}
+                      onRestart={() => setConfirm(true)}
+                    />
+                  ) : (
+                    <WorkspaceHealth onOpenService={nav} />
+                  )}
+                </main>
+              </div>
+              <StatusBar
+                workspace={window.DCC_DATA.workspace}
+                preset="On-call"
+                polling={true}
+                issues={5}
+                clock="14:33"
+              />
+              {palette ? (
+                <Palette
+                  onClose={() => setPalette(false)}
+                  onOpenService={nav}
+                />
+              ) : null}
+              {pod ? (
+                <PodDrawer
+                  pod={pod}
+                  onClose={() => setPod(null)}
+                  onRestart={() => setConfirm(true)}
+                />
+              ) : null}
+              {confirm ? (
+                <ConfirmDialog onClose={() => setConfirm(false)} />
+              ) : null}
+            </div>
+          );
+        }
+
+        Object.assign(window, { App, Rail });
+        if (!window.__dccMounted) {
+          window.__dccMounted = true;
+          ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+        }
+      }
+      __dccBoot();
+    </script>
+  </body>
+</html>

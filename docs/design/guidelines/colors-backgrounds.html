@@ -1,0 +1,51 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Background ladder" subtitle="Near-black layers — depth is a background step plus a hairline, never shadow" -->
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        background: var(--bg-0);
+        padding: 14px;
+        display: flex;
+        gap: 10px;
+      }
+      .sw {
+        flex: 1;
+        height: 110px;
+        border: 1px solid var(--border-1);
+        border-radius: var(--radius-2);
+        padding: 10px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: 2px;
+      }
+      .n {
+        font-family: var(--font-mono);
+        font-size: var(--fs-xs);
+        color: var(--text-2);
+      }
+      .v {
+        font-family: var(--font-mono);
+        font-size: var(--fs-2xs);
+        color: var(--text-3);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sw" style="background: var(--bg-0)">
+      <span class="n">--bg-0</span><span class="v">#0A0D12 · canvas</span>
+    </div>
+    <div class="sw" style="background: var(--bg-1)">
+      <span class="n">--bg-1</span><span class="v">#0F141B · panels</span>
+    </div>
+    <div class="sw" style="background: var(--bg-2)">
+      <span class="n">--bg-2</span><span class="v">#151C25 · raised</span>
+    </div>
+    <div class="sw" style="background: var(--bg-3)">
+      <span class="n">--bg-3</span><span class="v">#1C2530 · inputs</span>
+    </div>
+  </body>
+</html>

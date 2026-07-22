@@ -1,0 +1,11 @@
+:root {
+  /* Depth is background-step + hairline; shadows only on overlays */
+  --shadow-overlay:
+    0 12px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-drawer: -8px 0 24px rgba(0, 0, 0, 0.45);
+  --focus-ring: 0 0 0 2px rgba(52, 198, 236, 0.4);
+  /* Motion: minimal, state-change only */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.3, 1); /* @kind other */
+  --dur-fast: 120ms; /* @kind other */
+  --dur-med: 160ms; /* @kind other */
+}

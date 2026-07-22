@@ -1,0 +1,67 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Spacing scale" subtitle="4px base scale" -->
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        background: var(--bg-1);
+        padding: 16px;
+        display: flex;
+        gap: 18px;
+        align-items: flex-end;
+      }
+      .s {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: center;
+      }
+      .bar {
+        width: 26px;
+        background: var(--accent-dim);
+        border: 1px solid var(--accent);
+        border-radius: 2px;
+      }
+      .v {
+        font-family: var(--font-mono);
+        font-size: var(--fs-2xs);
+        color: var(--text-3);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="s">
+      <div class="bar" style="height: 4px"></div>
+      <span class="v">sp-1 4</span>
+    </div>
+    <div class="s">
+      <div class="bar" style="height: 8px"></div>
+      <span class="v">sp-2 8</span>
+    </div>
+    <div class="s">
+      <div class="bar" style="height: 12px"></div>
+      <span class="v">sp-3 12</span>
+    </div>
+    <div class="s">
+      <div class="bar" style="height: 16px"></div>
+      <span class="v">sp-4 16</span>
+    </div>
+    <div class="s">
+      <div class="bar" style="height: 20px"></div>
+      <span class="v">sp-5 20</span>
+    </div>
+    <div class="s">
+      <div class="bar" style="height: 24px"></div>
+      <span class="v">sp-6 24</span>
+    </div>
+    <div class="s">
+      <div class="bar" style="height: 32px"></div>
+      <span class="v">sp-8 32</span>
+    </div>
+    <div class="s">
+      <div class="bar" style="height: 40px"></div>
+      <span class="v">sp-10 40</span>
+    </div>
+  </body>
+</html>

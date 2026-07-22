@@ -1,0 +1,81 @@
+<!-- @dsCard group="Spacing" viewport="700x180" name="Density in use" subtitle="Tables over cards where data is comparable; 28px rows; crash-loops float to the top" -->
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        background: var(--bg-1);
+        padding: 0;
+        margin: 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--fs-sm);
+      }
+      th {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        text-align: left;
+        font-weight: 500;
+        padding: 6px 12px;
+        border-bottom: 1px solid var(--border-1);
+        background: var(--bg-2);
+        text-transform: uppercase;
+        letter-spacing: var(--tracking-overline);
+      }
+      td {
+        padding: 5px 12px;
+        border-bottom: 1px solid var(--border-1);
+        color: var(--text-1);
+        height: 18px;
+      }
+      .m {
+        font-family: var(--font-mono);
+      }
+      .t3 {
+        color: var(--text-3);
+      }
+    </style>
+  </head>
+  <body>
+    <table>
+      <tr>
+        <th>pod</th>
+        <th>phase</th>
+        <th>restarts</th>
+        <th>age</th>
+        <th>image</th>
+      </tr>
+      <tr style="background: var(--status-failing-dim)">
+        <td class="m">checkout-6df4cbf8b</td>
+        <td style="color: var(--status-failing)">⛔ CrashLoopBackOff</td>
+        <td style="color: var(--status-failing)" class="m">7</td>
+        <td class="m t3">22m</td>
+        <td class="m t3">checkout:3.7.12</td>
+      </tr>
+      <tr>
+        <td class="m">checkout-91ab22c1</td>
+        <td style="color: var(--status-healthy)">✓ Running</td>
+        <td class="m t3">0</td>
+        <td class="m t3">2d</td>
+        <td class="m t3">checkout:3.7.12</td>
+      </tr>
+      <tr>
+        <td class="m">catalog-77f01de2</td>
+        <td style="color: var(--status-healthy)">✓ Running</td>
+        <td class="m t3">1</td>
+        <td class="m t3">2d</td>
+        <td class="m t3">catalog:2.1.0</td>
+      </tr>
+      <tr>
+        <td class="m">storefront-04bb19aa</td>
+        <td style="color: var(--status-deploying)">⏳ ContainerCreating</td>
+        <td class="m t3">0</td>
+        <td class="m t3">4s</td>
+        <td class="m t3">storefront:5.0.1</td>
+      </tr>
+    </table>
+  </body>
+</html>

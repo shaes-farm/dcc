@@ -1,0 +1,78 @@
+<!-- @dsCard group="Brand" viewport="700x190" name="Voice" subtitle="Calm, factual, terse. States the fact, then offers the action" -->
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        background: var(--bg-1);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        font-size: var(--fs-base);
+      }
+      .k {
+        font-size: var(--fs-2xs);
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: var(--tracking-overline);
+        width: 80px;
+        flex: 0 0 auto;
+      }
+      .r {
+        display: flex;
+        gap: 12px;
+        align-items: baseline;
+      }
+      .m {
+        font-family: var(--font-mono);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="r">
+      <span class="k">rollup</span
+      ><span class="m"
+        >18 services ·
+        <span style="color: var(--status-failing)">3 unhealthy</span> — facts
+        joined by middle dots</span
+      >
+    </div>
+    <div class="r">
+      <span class="k">attention</span
+      ><span
+        ><span style="color: var(--status-failing)">⛔</span> checkout ·
+        qa&nbsp;&nbsp;<span class="m">CrashLoopBackOff (restarts: 7)</span
+        >&nbsp;&nbsp;<a href="#">→ open</a></span
+      >
+    </div>
+    <div class="r">
+      <span class="k">action</span
+      ><span
+        >Verb-first: <b>Restart workload</b> · <b>Re-run failed checks</b> ·
+        <b>Copy as curl</b></span
+      >
+    </div>
+    <div class="r">
+      <span class="k">error</span
+      ><span class="m" style="color: var(--text-2)"
+        >401 from Grafana — check GRAFANA_TOKEN in your shell</span
+      >
+    </div>
+    <div class="r">
+      <span class="k">empty</span
+      ><span style="color: var(--text-3)"
+        >No services configured → Add in Settings</span
+      >
+    </div>
+    <div class="r">
+      <span class="k">confirm</span
+      ><span
+        >States exactly what will happen: "Restart workload
+        <span class="m">checkout</span> @ <span class="m">qa</span> (shared)?" —
+        prod-like requires typing the name.</span
+      >
+    </div>
+  </body>
+</html>

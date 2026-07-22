@@ -1,0 +1,27 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Syntax palette" subtitle="Restrained highlight colors for logs and JSON only" -->
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        background: var(--bg-1);
+        padding: 16px;
+      }
+      pre {
+        margin: 0;
+        font-family: var(--font-mono);
+        font-size: var(--fs-sm);
+        line-height: var(--lh-log);
+        color: var(--text-2);
+      }
+    </style>
+  </head>
+  <body>
+    <pre>
+<span style="color:var(--text-3)">14:33:02.114</span> <span style="color:var(--status-failing)">ERROR</span> <span style="color:var(--syn-key)">"route"</span>: <span style="color:var(--syn-string)">"POST /orders"</span>, <span style="color:var(--syn-key)">"status"</span>: <span style="color:var(--syn-number)">500</span>, <span style="color:var(--syn-key)">"trace_id"</span>: <span style="color:var(--syn-string)">"4bf92f35"</span>
+<span style="color:var(--text-3)">14:33:02.298</span> <span style="color:var(--status-degraded)">WARN</span>  PricingClient retry 3/3 <span style="color:var(--syn-comment)">// NPE in PricingClient</span>
+<span style="color:var(--text-3)">14:33:04.001</span> <span style="color:var(--text-2)">INFO</span>  <span style="color:var(--syn-key)">"p95_ms"</span>: <span style="color:var(--syn-number)">480</span>, <span style="color:var(--syn-key)">"error_rate"</span>: <span style="color:var(--syn-number)">0.047</span>
+</pre>
+  </body>
+</html>

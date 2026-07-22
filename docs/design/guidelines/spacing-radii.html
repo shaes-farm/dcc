@@ -1,0 +1,62 @@
+<!-- @dsCard group="Spacing" viewport="700x160" name="Radii & depth" subtitle="4 / 6 / 8px; pills only for status badges. Overlays are the only shadows" -->
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        background: var(--bg-0);
+        padding: 16px;
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+      .b {
+        background: var(--bg-1);
+        border: 1px solid var(--border-1);
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+      }
+      .v {
+        font-family: var(--font-mono);
+        font-size: var(--fs-2xs);
+        color: var(--text-3);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="b" style="border-radius: var(--radius-1); height: 70px">
+      <span class="v">--radius-1 4px<br />controls, tags</span>
+    </div>
+    <div class="b" style="border-radius: var(--radius-2); height: 85px">
+      <span class="v">--radius-2 6px<br />panels, cards</span>
+    </div>
+    <div
+      class="b"
+      style="
+        border-radius: var(--radius-3);
+        height: 100px;
+        box-shadow: var(--shadow-overlay);
+        background: var(--bg-2);
+        border-color: var(--border-2);
+      "
+    >
+      <span class="v"
+        >--radius-3 8px<br />dialogs, palette<br />+ --shadow-overlay</span
+      >
+    </div>
+    <span
+      style="
+        border-radius: var(--radius-full);
+        background: var(--status-healthy-dim);
+        color: var(--status-healthy);
+        font-family: var(--font-mono);
+        font-size: var(--fs-xs);
+        padding: 3px 9px;
+      "
+      >✓ pill = status only</span
+    >
+  </body>
+</html>
