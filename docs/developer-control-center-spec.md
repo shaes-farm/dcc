@@ -1,33 +1,38 @@
 # Developer Control Center (DCC) — Product & Technical Specification
 
-**Version:** 0.1 (draft for redline)  
-**Status:** Ready for Claude Design (UI) and Claude Code (implementation) handoff  
+**Version:** 0.2 (redline incorporated)
+**Status:** Ready for Claude Design (UI) and Claude Code (implementation) handoff
 **Deployment model:** Local-only tool. Runs on the developer's machine, binds to localhost, uses the developer's own credentials. Single user, no server-side multi-tenancy.
+**Changelog 0.1 → 0.2:** Service is now the primary navigation object; formal Domain Model with resource URIs added (§3); all integrations generalized behind provider interfaces, not just deployments (§2.2); config restructured as a reference graph (§4); Workspace Health is the home screen (§5.1); UI recast as dockable panels with layout presets (§5.3); command palette promoted to a first-class spec (§5.4); Related Resources panel added (§5.5); cross-repo Git queries, API cross-linking, and observability correlation threads added (§6).
 
 ---
 
 ## 1. Overview
 
-DCC is a single-pane-of-glass control center for engineers working on cloud-native applications. It consolidates four surfaces that normally live in a dozen browser tabs — GitHub, Kubernetes/hosting dashboards, API documentation tools, and observability stacks — into one fast, dark, keyboard-driven local app.
+DCC is a single-pane-of-glass control center for engineers working on cloud-native applications. It consolidates the surfaces that normally live in a dozen browser tabs — GitHub, Kubernetes/hosting dashboards, API documentation tools, and observability stacks — into one fast, dark, keyboard-driven local app.
 
-It is **project-agnostic**: everything it shows is driven by a JSON config file (editable via a settings UI), so the same tool adapts to any project that follows similar conventions (GitHub for source, K8s/Vercel/Cloudflare for hosting, OpenAPI/GraphQL for APIs, OTel/Grafana-stack for observability).
+It is **project-agnostic**: everything it shows is driven by a JSON config file (editable via a settings UI), so the same tool adapts to any project that follows similar conventions (Git hosting for source, K8s/Vercel/Cloudflare for hosting, OpenAPI/GraphQL for APIs, OTel/Grafana-stack for observability).
+
+Crucially, DCC is organized around the engineer's mental model, not the tools': you debug *Checkout*, you don't "look at Kubernetes." The **Service** is the primary object; tools are lenses onto it.
 
 ### 1.1 Design principles
 
-1. **Glanceable first, drill-down second.** Every screen answers "is anything broken?" in under 2 seconds before offering detail.
-2. **Read-heavy, write-careful.** The app is primarily an inspection tool. A small set of *safe actions* (restart pod, re-run CI, trigger deploy) is allowed, always behind explicit confirmation, always audit-logged.
-3. **Config as truth.** The JSON file is the source of truth. The settings UI is a friendly editor for that file, not a separate database.
-4. **Bring your own credentials.** DCC never stores secrets. It uses credentials already on the machine (`gh` auth, kubeconfig, env vars).
-5. **2am-proof UX.** Dark, minimal, high-contrast where it matters, no decorative noise, obvious status colors, forgiving of a tired brain.
+1. **The Service is the unit of thought.** Navigation, search, and layout organize around services (Checkout, Storefront, UI Library). Tool-centric views (all repos, all environments) remain as alternate lenses, not the spine.
+2. **Glanceable first, drill-down second.** Every surface answers "is anything broken?" in under 2 seconds before offering detail. Workspace Health is the front door.
+3. **Everything is addressable.** Every entity has a stable resource URI (§3.2). If you can see it, you can link to it, palette-jump to it, favorite it, and relate it to other things.
+4. **Read-heavy, write-careful.** The app is primarily an inspection tool. A small set of *safe actions* (restart workload, re-run CI, trigger deploy) is allowed, always behind explicit confirmation, always audit-logged.
+5. **Config as truth, shaped as a graph.** The JSON file is the source of truth; entities reference each other by ID, nothing is duplicated. The settings UI is a friendly editor for that file, not a separate database.
+6. **Bring your own credentials.** DCC never stores secrets. It uses credentials already on the machine (`gh` auth, kubeconfig, env vars).
+7. **2am-proof UX.** Dark, minimal, high-contrast where it matters, no decorative noise, obvious status colors, forgiving of a tired brain.
 
 ### 1.2 Personas & primary scenarios
 
-| Persona | Primary scenario |
-|---|---|
-| Software engineer | "Is my PR green? What did CodeQL flag? Let me poke the QA API for this endpoint." |
-| DevOps / platform engineer | "Which pods are crash-looping in staging? Restart the bad one. Did the deploy go out?" |
-| Tech lead | "Across our 9 repos, what security alerts are open? What's the error rate trend this week?" |
-| On-call engineer (2am) | "Alert fired. Health-check everything, find the failing route, search logs, correlate with the last deploy." |
+| Persona | Primary scenario | Typical layout preset |
+|---|---|---|
+| Software engineer | "Is my PR green? What did CodeQL flag? Let me poke the QA API for this endpoint." | Pods · Logs · API |
+| DevOps / platform engineer | "Which pods are crash-looping in staging? Restart the bad one. Did the deploy go out?" | Environments · Deploys · Logs |
+| Tech lead | "Across our 9 repos, what security alerts are open? What's the error rate trend this week?" | Security · PRs · Deploys · Metrics |
+| On-call engineer (2am) | "Alert fired. Health-check everything, find the failing route, correlate with the last deploy." | Health · Metrics · Logs · Correlation |
 
 ### 1.3 Non-goals (v1)
 
@@ -36,6 +41,7 @@ It is **project-agnostic**: everything it shows is driven by a JSON config file 
 - No destructive/irreversible actions (delete namespace, force-push, merge PRs, scale to zero in prod-like envs).
 - No alerting engine of its own (it *surfaces* alerts; it doesn't page you).
 - No persistence of metrics/logs (always queried live from upstream; small local cache only).
+- Provider *interfaces* for issues and documentation are defined (§2.2) but no implementations ship in v1.
 
 ---
 
@@ -46,14 +52,17 @@ It is **project-agnostic**: everything it shows is driven by a JSON config file 
 │  Next.js app (localhost:7777)                                │
 │                                                              │
 │  React 19 UI (App Router, RSC where sensible)                │
-│   ├─ Zustand: client/UI state (selections, panels, palette)  │
+│   ├─ Panel/layout engine (dockable panels, presets)          │
+│   ├─ URI resolver (resource URIs → panels)                   │
+│   ├─ Zustand: client/UI state (layouts, palette, drawers)    │
 │   └─ TanStack Query: server-state cache (polling, retries)   │
 │                                                              │
 │  Route Handlers = local BFF / service layer                  │
-│   ├─ /api/github/*     → GitHub REST+GraphQL (gh auth)       │
-│   ├─ /api/deploy/*     → Provider adapters (K8s/Vercel/CF)   │
-│   ├─ /api/apis/*       → Spec ingestion + request proxy      │
-│   ├─ /api/obs/*        → Prometheus/Loki/Grafana/OTel/Vercel │
+│   ├─ /api/git/*        → GitProvider impls (GitHub v1)       │
+│   ├─ /api/deploy/*     → DeploymentProvider impls (K8s/…)    │
+│   ├─ /api/apis/*       → ApiProvider: spec ingest + proxy    │
+│   ├─ /api/obs/*        → ObservabilityProvider impls         │
+│   ├─ /api/graph/*      → Relationship graph queries          │
 │   ├─ /api/config/*     → Read/validate/write JSON config     │
 │   └─ /api/actions/*    → Safe-action executor + audit log    │
 └──────────────────────────────────────────────────────────────┘
@@ -65,292 +74,517 @@ It is **project-agnostic**: everything it shows is driven by a JSON config file 
 
 **Why a BFF layer even locally:** browser CORS restrictions, credential isolation (tokens never reach the browser bundle), response normalization across providers, and a single choke point for the audit log and rate limiting.
 
-### 2.1 Provider adapter pattern (key abstraction)
+**Why route handlers rather than React Server Functions:** Server Functions are designed for component-invoked mutations — they're POST-only, compiled to opaque endpoints, and coupled to the React render tree. This app's service layer is dominated by *reads* that want the opposite properties: stable, addressable GET endpoints that TanStack Query can poll, dedupe, and cache by URL; SSE/chunked responses for log streaming (not possible from a Server Function); and an explicit HTTP surface you can hit with `curl` when debugging DCC itself at 2am. Route handlers also keep the choke-point story honest — one middleware layer for audit logging and the proxy allow-list, rather than logic scattered across action functions. Server Functions remain fair game as an implementation detail for simple form mutations in the Settings UI, but the service layer contract is route handlers.
 
-All hosting environments implement one interface so the UI is provider-agnostic:
+### 2.1 Data freshness model
+
+- **Polling via TanStack Query** with per-domain intervals (defaults): env status 15s, Git PRs/checks 60s, security alerts 5m, dashboards 30s, logs on demand.
+- **Streaming** where cheap: `kubectl logs -f` equivalent via chunked responses/SSE from the route handler.
+- Global "pause polling" toggle (battery/laptop mercy) and per-panel manual refresh.
+- Every panel shows a subtle "as of Xs ago" timestamp — critical for trust at 2am.
+
+### 2.2 Provider interfaces (the plugin system)
+
+Every integration category — not just deployments — sits behind a provider interface. GitHub is merely the v1 `GitProvider` implementation; GitLab or Azure DevOps become alternate implementations, not new features. Same for Nomad/Fly/Railway behind `DeploymentProvider`, or Datadog behind `ObservabilityProvider`. Providers self-describe via `capabilities()`, and the UI renders only what a provider declares — no capability, no affordance.
 
 ```ts
-interface DeploymentProvider {
-  id: string;                       // "k8s", "vercel", "cloudflare"
-  listEnvironments(): Promise<EnvSummary[]>;
-  getEnvironment(id: string): Promise<EnvDetail>;      // workloads/pods/functions
-  getWorkloadStatus(ref: WorkloadRef): Promise<WorkloadStatus>;
-  getRecentDeploys(ref: EnvRef): Promise<Deploy[]>;
-  getLogs(ref: WorkloadRef, opts: LogQuery): Promise<LogPage>;
-  capabilities(): Capability[];     // e.g. "restartWorkload", "streamLogs"
-  // Safe actions — only if capability is declared:
-  restartWorkload?(ref: WorkloadRef): Promise<ActionResult>;
-  triggerDeploy?(ref: EnvRef, opts?: DeployOpts): Promise<ActionResult>;
+interface Provider {
+  id: string;                                  // "github", "k8s", "vercel", "loki", …
+  kind: "git" | "deployment" | "observability" | "api" | "issue" | "documentation";
+  capabilities(): Capability[];
+  testConnection(): Promise<ConnectionResult>; // powers Settings "test" buttons
 }
+
+interface GitProvider extends Provider {
+  listRepos(): Promise<Repository[]>;
+  listPullRequests(repo: Uri, filter?: PrFilter): Promise<PullRequest[]>;
+  listWorkflowRuns(scope: Uri | "workspace", filter?: RunFilter): Promise<WorkflowRun[]>;
+  listAlerts(scope: Uri | "workspace"): Promise<SecurityAlert[]>;   // normalized, all sources
+  listReleases(repo: Uri): Promise<Release[]>;
+  listIssues?(repo: Uri): Promise<Issue[]>;
+  rerunWorkflow?(run: Uri): Promise<ActionResult>;                  // safe action
+}
+
+interface DeploymentProvider extends Provider {
+  listEnvironments(): Promise<EnvSummary[]>;
+  getEnvironment(env: Uri): Promise<EnvDetail>;          // workloads/pods/functions
+  getWorkloadStatus(w: Uri): Promise<WorkloadStatus>;
+  getRecentDeploys(env: Uri): Promise<Deploy[]>;
+  getLogs(w: Uri, opts: LogQuery): Promise<LogPage>;
+  restartWorkload?(w: Uri): Promise<ActionResult>;       // safe action
+  triggerDeploy?(env: Uri, opts?: DeployOpts): Promise<ActionResult>;
+}
+
+interface ObservabilityProvider extends Provider {
+  queryMetrics?(q: MetricQuery): Promise<Series[]>;      // Prometheus, Vercel
+  searchLogs?(q: LogSearch): Promise<LogPage>;           // Loki
+  getTrace?(traceId: string): Promise<Trace>;            // Tempo
+  listDashboards?(): Promise<DashboardRef[]>;            // Grafana
+}
+
+interface ApiProvider extends Provider {
+  fetchSpec(source: SpecSource): Promise<NormalizedSpec>; // OAS3 | Swagger2→OAS3 | GraphQL introspection
+  proxyRequest(req: PlaygroundRequest): Promise<PlaygroundResponse>;
+}
+
+// Defined for future-proofing; no v1 implementations:
+interface IssueProvider extends Provider { /* Jira, Linear, GitHub Issues-as-tracker */ }
+interface DocumentationProvider extends Provider { /* ADRs, wikis, runbooks */ }
 ```
 
-Normalized status vocabulary across providers: `healthy | degraded | failing | deploying | unknown`. K8s pods map from phase+restarts+readiness; Vercel maps from deployment state; Cloudflare from deployment/worker status. The UI only ever renders the normalized vocabulary.
-
-### 2.2 Data freshness model
-
-- **Polling via TanStack Query** with per-domain intervals (defaults): env status 15s, GitHub PRs/checks 60s, security alerts 5m, dashboards 30s, logs on demand.
-- **Streaming** where cheap: `kubectl logs -f` equivalent via chunked responses/SSE from the route handler.
-- Global "pause polling" toggle (battery/laptop mercy) and per-view manual refresh.
-- Every panel shows a subtle "as of Xs ago" timestamp — critical for trust at 2am.
+**Normalized status vocabulary** across all deployment providers: `healthy | degraded | failing | deploying | unknown`. Mapping rules must be documented in code (e.g., K8s `CrashLoopBackOff` → `failing`; Vercel `BUILDING` → `deploying`; missing metrics → `unknown`, never guess `healthy`). The UI only ever renders the normalized vocabulary.
 
 ---
 
-## 3. Configuration
+## 3. Domain Model & Addressability
 
-### 3.1 The JSON file
+This section defines the canonical objects. Every panel, provider, and config entity builds on this vocabulary — new providers map *into* it, preventing drift as the platform grows.
 
-Default path `./dcc.config.json` (overridable via `DCC_CONFIG` env var). JSON Schema published at `schema/dcc.schema.json` and referenced via `$schema` for editor autocomplete. **Secrets never live in this file** — fields that need credentials reference environment variable *names* (`tokenEnv`), resolved server-side at runtime from the shell/`.env.local`.
+### 3.1 Canonical objects
+
+| Object | Definition | Produced by |
+|---|---|---|
+| **Workspace** | The root: one config file, one set of services/providers. | Config |
+| **Service** | The primary object. A logical application/component an engineer thinks in (Checkout, UI Library). Aggregates references to everything below. | Config |
+| **Repository** | A source repo (code, library, infra). | GitProvider |
+| **PullRequest / Issue / WorkflowRun / Release / Package / SecurityAlert / Dependency** | Normalized Git-domain concepts, each independently queryable across all repos. | GitProvider |
+| **Environment** | A deployment target (dev, qa, staging, previews) with a `tier` (`sandbox`/`shared`/`prod-like`). | Config + DeploymentProvider |
+| **Deployment** | A rollout event of a service into an environment (version/SHA, time, actor, state). | DeploymentProvider |
+| **Workload** | A running unit (K8s Deployment/StatefulSet/CronJob, Vercel function, CF worker). Contains **Pods** where applicable. | DeploymentProvider |
+| **Api** | An ingested spec (REST or GraphQL) with **Operations**. | ApiProvider |
+| **Dashboard** | A metrics view (pinned Grafana dashboard or built-in error/latency view). | ObservabilityProvider |
+| **HealthCheck** | An HTTP probe with expected status. | Config + BFF |
+| **LogStream / Trace** | Queryable log scope; a distributed trace. | ObservabilityProvider |
+| **Action** | A safe, auditable operation against a target URI. | Action framework |
+| **Provider** | A configured integration instance. | Config |
+
+### 3.2 Resource URIs
+
+Every instance of every object has a stable URI:
+
+```
+workspace://commerce
+service://checkout
+repo://github/acme/checkout-svc
+pr://github/acme/checkout-svc/482
+run://github/acme/checkout-svc/9182734
+alert://github/codeql/1234
+env://qa
+deploy://qa/checkout/2026-07-21T14.32_a1b2c3d
+workload://qa/checkout/deployment/checkout
+pod://qa/checkout/checkout-6df4cbf8b
+api://checkout/rest          op://checkout/rest/createOrder
+dashboard://grafana/uid-errors
+logs://loki?service=checkout&env=qa
+trace://tempo/4bf92f35
+action://restartWorkload?target=workload://qa/checkout/deployment/checkout
+```
+
+**Rules:**
+- Anything rendered anywhere carries its URI: right-click/⌘-click → **Copy link**; pasting a URI into the palette navigates to it.
+- The internal router resolves `URI → panel + parameters`; browser deep links mirror URIs (`/r/service%3A%2F%2Fcheckout`).
+- Navigation history, favorites, layout presets, and the relationship graph all store URIs — nothing stores ad-hoc object shapes.
+- URIs make future plugins trivial: a plugin contributes URI schemes + panels, and palette/linking/relationships work automatically.
+
+### 3.3 The relationship graph
+
+DCC maintains an in-memory graph of edges between URIs, rebuilt on config load and enriched at runtime:
+
+| Edge source | Examples |
+|---|---|
+| **Declared** (config references, §4) | `service://checkout —has-repo→ repo://…`, `—runs-in→ env://qa`, `—exposes→ api://checkout/rest`, `—measured-by→ dashboard://…` |
+| **Derived from providers** | deploys ↔ commits/PRs (SHA match), pods ↔ workloads ↔ services (label/selector match), alerts ↔ repos ↔ services |
+| **Derived from telemetry/specs** | service → service call edges from OTel service-graph metrics or OpenAPI `links`; manual `dependsOn` config edges as fallback |
+
+The graph powers the Related Resources panel (§5.5), correlation threads (§6.4), the service dependency map (§6.3), and palette context. `/api/graph/related?uri=…` returns typed edges.
+
+---
+
+## 4. Configuration
+
+### 4.1 The JSON file — a reference graph
+
+Default path `./dcc.config.json` (overridable via `DCC_CONFIG` env var). JSON Schema published at `schema/dcc.schema.json` and referenced via `$schema` for editor autocomplete. **Secrets never live in this file** — fields needing credentials reference environment variable *names* (`tokenEnv`), resolved server-side at runtime.
+
+The config is shaped as **keyed collections + ID references**: every entity is declared once with an `id`, and services (and anything else) reference those IDs. Nothing duplicates information; validation rejects dangling references with a precise error ("service `checkout` references unknown dashboard `error`s — did you mean `errors`?").
 
 ```jsonc
 {
   "$schema": "./schema/dcc.schema.json",
   "workspace": { "name": "Acme Commerce", "defaultEnvironment": "dev" },
 
-  "github": {
-    "auth": "gh-cli",                    // "gh-cli" | { "tokenEnv": "GITHUB_TOKEN" }
-    "repos": [
-      { "owner": "acme", "name": "storefront", "tags": ["app", "nextjs"] },
-      { "owner": "acme", "name": "checkout-svc", "tags": ["service"] },
-      { "owner": "acme", "name": "ui-kit", "tags": ["library"] }
+  "providers": {
+    "git": [{ "id": "github", "kind": "github", "auth": "gh-cli" }],   // or { "tokenEnv": "GITHUB_TOKEN" }
+    "deployment": [
+      { "id": "k8s-dev", "kind": "kubernetes", "kubeContext": "acme-dev" },
+      { "id": "k8s-qa",  "kind": "kubernetes", "kubeContext": "acme-qa" },
+      { "id": "vercel",  "kind": "vercel", "teamId": "team_x", "tokenEnv": "VERCEL_TOKEN" },
+      { "id": "cf",      "kind": "cloudflare", "accountId": "…", "tokenEnv": "CF_API_TOKEN" }
     ],
-    "alerts": { "dependabot": true, "codeScanning": true, "secretScanning": true },
-    "external": [                        // non-GitHub scanners surfaced read-only
-      { "kind": "wiz", "reportUrl": "https://app.wiz.io/...", "tokenEnv": "WIZ_TOKEN" }
+    "observability": [
+      { "id": "grafana", "kind": "grafana", "url": "https://grafana.acme.dev", "tokenEnv": "GRAFANA_TOKEN" },
+      { "id": "prom",    "kind": "prometheus", "url": "https://prom.acme.dev", "tokenEnv": "PROM_TOKEN" },
+      { "id": "loki",    "kind": "loki", "url": "https://loki.acme.dev", "tokenEnv": "LOKI_TOKEN" },
+      { "id": "tempo",   "kind": "tempo", "url": "https://tempo.acme.dev", "tokenEnv": "TEMPO_TOKEN" }
+    ],
+    "external": [
+      { "id": "wiz", "kind": "wiz", "reportUrl": "https://app.wiz.io/…", "tokenEnv": "WIZ_TOKEN" }
     ]
   },
 
+  "repositories": [
+    { "id": "storefront",   "provider": "github", "owner": "acme", "name": "storefront",   "tags": ["app", "nextjs"] },
+    { "id": "checkout-svc", "provider": "github", "owner": "acme", "name": "checkout-svc", "tags": ["service"] },
+    { "id": "ui-kit",       "provider": "github", "owner": "acme", "name": "ui-kit",       "tags": ["library"] }
+  ],
+
   "environments": [
-    {
-      "id": "dev",
-      "label": "Development",
-      "provider": "kubernetes",
-      "kubeContext": "acme-dev",
-      "namespaces": ["storefront", "checkout"],
-      "tier": "sandbox"                  // "sandbox" | "shared" | "prod-like"
-    },
-    { "id": "qa", "label": "QA", "provider": "kubernetes", "kubeContext": "acme-qa",
-      "namespaces": ["storefront", "checkout"], "tier": "shared" },
-    { "id": "preview", "label": "Vercel Previews", "provider": "vercel",
-      "teamId": "team_x", "projectIds": ["prj_storefront"], "tokenEnv": "VERCEL_TOKEN",
-      "tier": "sandbox" },
-    { "id": "edge", "label": "CF Workers", "provider": "cloudflare",
-      "accountId": "…", "workers": ["img-resizer"], "tokenEnv": "CF_API_TOKEN",
-      "tier": "shared" }
+    { "id": "dev", "label": "Development", "provider": "k8s-dev", "namespaces": ["storefront", "checkout"], "tier": "sandbox" },
+    { "id": "qa",  "label": "QA",          "provider": "k8s-qa",  "namespaces": ["storefront", "checkout"], "tier": "shared" },
+    { "id": "preview", "label": "Vercel Previews", "provider": "vercel", "projectIds": ["prj_storefront"], "tier": "sandbox" },
+    { "id": "edge", "label": "CF Workers", "provider": "cf", "workers": ["img-resizer"], "tier": "shared" }
+  ],
+
+  "apis": [
+    { "id": "checkout-rest",  "type": "openapi", "url": "https://qa.acme.dev/checkout/openapi.json",
+      "auth": { "kind": "bearer", "tokenEnv": "CHECKOUT_QA_TOKEN" } },
+    { "id": "catalog-graph",  "type": "graphql", "url": "https://qa.acme.dev/graphql" }
+  ],
+
+  "dashboards": [
+    { "id": "errors",  "provider": "grafana", "uid": "uid-errors" },
+    { "id": "latency", "provider": "grafana", "uid": "uid-latency" }
+  ],
+
+  "healthChecks": [
+    { "id": "hc-storefront", "name": "Storefront", "url": "https://qa.acme.dev/healthz", "expectStatus": 200 },
+    { "id": "hc-checkout",   "name": "Checkout",   "url": "https://qa.acme.dev/checkout/healthz", "expectStatus": 200 }
   ],
 
   "services": [
     {
       "id": "checkout",
       "name": "Checkout Service",
-      "repo": "acme/checkout-svc",
-      "api": { "type": "openapi", "url": "https://qa.acme.dev/checkout/openapi.json" },
+      "repository": "checkout-svc",
+      "environments": ["dev", "qa"],
+      "workloadSelector": { "namespace": "checkout", "labels": { "app": "checkout" } },
+      "apis": ["checkout-rest"],
       "baseUrls": { "dev": "https://dev.acme.dev/checkout", "qa": "https://qa.acme.dev/checkout" },
-      "auth": { "kind": "bearer", "tokenEnv": "CHECKOUT_QA_TOKEN" }
+      "dashboards": ["errors", "latency"],
+      "healthChecks": ["hc-checkout"],
+      "dependsOn": ["catalog"]                    // manual edge; OTel-derived edges merge in
     },
     {
-      "id": "catalog-graph",
-      "name": "Catalog GraphQL",
-      "api": { "type": "graphql", "url": "https://qa.acme.dev/graphql" },
-      "baseUrls": { "qa": "https://qa.acme.dev/graphql" }
-    }
+      "id": "storefront",
+      "name": "Storefront",
+      "repository": "storefront",
+      "environments": ["qa", "preview"],
+      "healthChecks": ["hc-storefront"],
+      "dependsOn": ["checkout"]
+    },
+    { "id": "catalog", "name": "Catalog GraphQL", "apis": ["catalog-graph"], "environments": ["qa"] },
+    { "id": "ui-kit", "name": "UI Library", "repository": "ui-kit" }   // libraries are services too
   ],
-
-  "observability": {
-    "grafana": { "url": "https://grafana.acme.dev", "tokenEnv": "GRAFANA_TOKEN",
-                 "pinnedDashboards": ["uid-errors", "uid-latency"] },
-    "prometheus": { "url": "https://prom.acme.dev", "tokenEnv": "PROM_TOKEN" },
-    "loki": { "url": "https://loki.acme.dev", "tokenEnv": "LOKI_TOKEN" },
-    "tempo": { "url": "https://tempo.acme.dev", "tokenEnv": "TEMPO_TOKEN" },
-    "vercelAnalytics": { "projectIds": ["prj_storefront"] },
-    "healthChecks": [
-      { "name": "Storefront", "url": "https://qa.acme.dev/healthz", "expectStatus": 200 },
-      { "name": "Checkout", "url": "https://qa.acme.dev/checkout/healthz", "expectStatus": 200 }
-    ]
-  },
 
   "actions": {
     "enabled": true,
     "allow": ["restartWorkload", "rerunCi", "triggerDeploy"],
-    "confirmPhraseForTiers": ["prod-like"]   // typed confirmation for risky tiers
+    "confirmPhraseForTiers": ["prod-like"]
   },
 
-  "ui": { "pollingSeconds": { "environments": 15, "github": 60, "dashboards": 30 } }
+  "ui": { "pollingSeconds": { "environments": 15, "git": 60, "dashboards": 30 } }
 }
 ```
 
-### 3.2 Settings UI
+### 4.2 Settings UI
 
-- Full CRUD over every config section via forms (shadcn/ui), with Zod validation mirrored from the JSON Schema — one schema definition generates both.
-- Writes back to the JSON file **preserving key order and comments are not supported** (file is plain JSON; the UI rewrites it deterministically). A diff preview is shown before save.
-- "Test connection" button per integration (GitHub, each kube context, each observability endpoint, each API spec URL) with actionable error messages ("401 from Grafana — check GRAFANA_TOKEN in your shell").
-- Invalid config never crashes the app: the app boots into a config-repair screen listing validation errors with line references.
+- Full CRUD over every config section via forms (shadcn/ui), with Zod validation mirrored from the JSON Schema — one schema definition generates both. Reference fields render as pickers over existing IDs (no free-text foreign keys).
+- Writes back to the JSON file deterministically (stable key order; plain JSON, no comments). A diff preview is shown before save.
+- "Test connection" button per provider (via `Provider.testConnection()`) with actionable error messages ("401 from Grafana — check GRAFANA_TOKEN in your shell").
+- Invalid config never crashes the app: the app boots into a config-repair screen listing validation errors (including dangling references) with line references.
 - File watcher: external edits to `dcc.config.json` hot-reload the app state with a toast.
 
 ---
 
-## 4. Module Specifications
+## 5. Navigation & Layout Model
 
-### 4.1 Module: Repositories (GitHub)
+### 5.1 Workspace Health — the home screen (Mission Control)
 
-**Purpose:** Manage and monitor the configured repos and their dependency libraries; surface security posture at a glance.
+The app opens onto a workspace-wide rollup, not a tool:
 
-**Service layer:** GitHub REST + GraphQL v4. Auth resolution order: `gh auth token` (if `auth: "gh-cli"`), else `tokenEnv`. The `gh` CLI is an optional accelerator, not a hard dependency — everything must work with a plain token.
+```
+Acme Commerce                                    ● 5 issues
+─────────────────────────────────────────────────────────────
+ 18 services · 3 unhealthy      23 repositories · 4 red CI
+ 147 pods · 98% healthy         11 security alerts (2 critical)
+ 2 deploys running              6/6 health checks passing
+─────────────────────────────────────────────────────────────
+ Attention needed:
+ ⛔ checkout · qa    CrashLoopBackOff (restarts: 7)     → open
+ ⚠ storefront       p95 latency +240% since deploy 14:32 → open
+ ⚠ ui-kit           CodeQL critical: prototype pollution → open
+```
 
-**Views:**
+Every number and row is a drill-down (it's a URI). "Attention needed" is ranked worst-first across all providers. This screen must render meaningfully with any subset of providers configured.
 
-1. **Repo grid** — one card per repo: default-branch CI status, open PR count, open security-alert count (severity-weighted badge), last commit (author, relative time), tags. Sort/filter by tag, alert severity, staleness.
-2. **Repo detail** — tabs:
-   - *Pull requests:* list with check status, review state, mergeability, age; deep-link to GitHub. Safe action: **re-run failed checks** (workflow re-run).
-   - *Branches & activity:* recent commits, active branches, releases/tags.
-   - *Security:* unified alert table merging Dependabot, CodeQL/code-scanning, and secret-scanning, normalized to `{ source, severity, title, path?, firstSeen, url }`. External scanners (e.g., Wiz) appear as an additional source when configured; if the external API is unreachable, show a link-out card instead of failing the tab.
-   - *Dependencies:* for repos tagged `library`, show reverse-dependency hints ("used by storefront, checkout-svc") derived from config tags + package manifests when detectable.
-3. **Security rollup (workspace-level)** — all alerts across all repos in one severity-sorted table. This is the tech-lead landing page.
+### 5.2 Service-centric navigation
+
+The left rail lists **services** (from config), each with a status dot rolled up from everything related to it. Selecting a service opens its **cockpit** — a preset layout of panels automatically bound to that service via the relationship graph:
+
+```
+Checkout                                          ● degraded
+┌────────────┬──────────────────────┬────────────────────────┐
+│ Repository │ Pods (qa)            │ Health & Metrics       │
+│  PRs: 3    │  checkout-6df4… ⛔   │  hc: ✓  err: 2.3% ↑    │
+│  CI: ✓     │  checkout-91ab… ✓    │  p95: 480ms            │
+├────────────┼──────────────────────┼────────────────────────┤
+│ Deploys    │ Logs (tail)          │ API · Dependencies     │
+│  qa 14:32  │  …                   │  REST · → catalog      │
+└────────────┴──────────────────────┴────────────────────────┘
+```
+
+Tool-centric lenses (all repos, all environments, all APIs, observability) remain available below the service list — they're the same panels bound to workspace scope instead of a service.
+
+### 5.3 Panels, not pages
+
+Every capability in §6 ships as a **panel**: a self-contained, URI-parameterized component (`LogsPanel(logs://loki?service=checkout&env=qa)`, `PodsPanel(env://qa + service://checkout)`, `SecurityPanel(workspace)`).
+
+- **Layouts** are named arrangements of panels, savable as **presets** ("Debugging", "Tech-lead review", "On-call"). Presets persist to `~/.dcc/layouts.json` and are palette-switchable.
+- **v1 docking model (deliberately constrained):** a slot-based grid — split, resize, swap, and maximize panels within preset slots — rather than fully free-form floating/tabbed docking. Free-form docking (dockview-style) is the v2 upgrade path; the panel contract is identical either way. This keeps Phase 0 tractable without painting us into a corner.
+- Panel library (v1): Workspace Health, Service Cockpit slots, Repos grid, PRs, Workflow Runs, Security, Environments, Pods, Pod detail, Deploys, Logs, Log search, REST explorer, GraphQL explorer, Health board, Error rates, Latency, Pinned dashboard, Related Resources, Audit log.
+- Panels degrade independently: an unreachable provider turns *its* panels into inline error cards; the layout stands.
+
+### 5.4 Command palette (⌘K) — first-class spec
+
+The palette is the engineer's launcher and the primary navigation for power users.
+
+**Index:** every URI in the workspace (services, repos, PRs, envs, workloads, pods, APIs, operations, dashboards, alerts, actions, layout presets, settings sections), refreshed with polling data. Fuzzy-matched with type-aware ranking (services > envs > workloads > leaf objects) and recency boost.
+
+**Grammar:** `object`, `object → sub-object`, or `verb object`:
+
+```
+checkout                     restart checkout qa
+├ Checkout Service      ●    ├ ⚡ Restart workload checkout @ qa   [confirm…]
+├ Pods · qa                  logs checkout qa
+├ Logs · qa                  ├ ⏵ Tail logs · checkout @ qa
+├ Metrics (err/p95)          error
+├ Repo · checkout-svc        ├ Error rates · workspace
+├ OpenAPI explorer           ├ ⛔ checkout qa · CrashLoopBackOff
+├ Deploy history             ├ ⚠ CodeQL critical · ui-kit
+└ PRs (3 open)
+```
+
+**Progressive narrowing:** selecting a non-leaf result descends into its related objects (via the graph) without closing the palette — `error → Checkout → p95 latency → last deployment → tail logs` is one keyboard flow.
+
+**Actions in the palette** use the identical safe-action framework (§7.1): selecting an action opens the same confirmation dialog (typed-name for `prod-like`); nothing executes from the palette without it.
+
+**Other verbs:** `layout <preset>`, `pause polling`, `copy link <object>`, `settings <section>`, paste a URI to jump.
+
+**Acceptance criteria:** first paint < 50ms after ⌘K; results < 100ms against a 500-URI index; every palette flow completable keyboard-only.
+
+### 5.5 Related Resources panel
+
+A dockable panel (and a drawer available from any object header) that answers "what's connected to this?" from the relationship graph:
+
+```
+Checkout Service
+ Repository   → checkout-svc (CI ✓, 3 PRs)
+ Deployments  → qa (14:32, a1b2c3d) · staging
+ Pods         → checkout-6df4… ⛔ · checkout-91ab… ✓
+ APIs         → REST · (calls: catalog-graph)
+ Dashboards   → Errors · Latency
+ Security     → 3 CodeQL alerts
+ Depends on   → catalog        Used by → storefront
+```
+
+Every row is a URI link; edges show their provenance (declared / derived / telemetry) on hover. This panel is where the graph earns its keep — it should be present by default in every service cockpit.
+
+---
+
+## 6. Capability Views (panel families)
+
+The four capability families from v0.1 survive intact — as panel libraries bound to either a service or the workspace — with their service layers, guardrails, and acceptance criteria.
+
+### 6.1 Git (GitHub in v1)
+
+**Purpose:** Monitor and manage repos and libraries; surface security posture at a glance — per service or across the workspace.
+
+**Service layer:** `GitProvider` (§2.2). GitHub implementation: REST + GraphQL v4. Auth resolution order: `gh auth token` (if `auth: "gh-cli"`), else `tokenEnv`. The `gh` CLI is an optional accelerator, not a hard dependency.
+
+**Normalized, independently queryable concepts:** Repository, PullRequest, Issue, WorkflowRun, Release, Package, SecurityAlert, Dependency. Each has a workspace-scoped query panel, enabling cross-repo questions like **"every failed workflow run across every repository"** or "all PRs awaiting my review" — not just per-repo tabs.
+
+**Panels:**
+
+1. **Repo grid** — one card per repo: default-branch CI status, open PR count, severity-weighted alert badge, last commit, tags. Sort/filter by tag, alert severity, staleness.
+2. **Repo detail** — PRs (check status, review state, mergeability, age; deep links; safe action: **re-run failed checks**), branches & activity, releases.
+3. **Workflow runs (workspace)** — all runs across repos, filterable by status/repo/branch; the "what's red in CI anywhere" panel.
+4. **Security rollup (workspace)** — unified alert table merging Dependabot, CodeQL/code-scanning, and secret-scanning across all repos, normalized to `{ source, severity, title, repo, path?, firstSeen, url }`, severity-sorted. External scanners (e.g., Wiz) appear as an additional source; unreachable external APIs degrade to a link-out card.
+5. **Dependencies** — for repos tagged `library`: reverse-dependency hints ("used by storefront, checkout-svc") from graph edges + package manifests when detectable.
 
 **Acceptance criteria:**
 - With `gh` authenticated and 5 repos configured, the repo grid fully renders in < 3s on warm cache.
 - Alert counts match GitHub UI within one polling interval.
+- The workspace workflow-runs panel answers "all failed runs, all repos, last 24h" in one query interaction.
 - Re-run CI requires a confirmation dialog and appears in the audit log.
 
-### 4.2 Module: Environments (K8s + normalized providers)
+### 6.2 Environments & Workloads
 
 **Purpose:** Answer "what is running, where, and is it healthy?" across K8s, Vercel, and Cloudflare through one normalized UI.
 
-**Service layer:** `@kubernetes/client-node` reading the local kubeconfig (contexts named in config); Vercel REST API; Cloudflare API. All behind the `DeploymentProvider` interface (§2.1).
+**Service layer:** `DeploymentProvider` implementations — `@kubernetes/client-node` over local kubeconfig contexts; Vercel REST API; Cloudflare API.
 
-**Views:**
+**Panels:**
 
-1. **Environment overview** — one row/card per environment: normalized status rollup (worst-of), workload count, last deploy time + version/SHA, provider icon, tier badge (`sandbox`/`shared`/`prod-like`).
-2. **Environment detail (K8s)** — namespaces → workloads (Deployments/StatefulSets/CronJobs) → pods. Per pod: phase, readiness, restart count (highlight > 3), age, image tag, resource requests vs usage if metrics-server is available. Crash-looping pods float to the top, always.
-3. **Pod detail drawer** — recent events, container statuses, env-var *names* (values masked), live log tail (follow mode, pause, grep-style client filter). Safe actions: **restart workload** (rollout restart, not pod delete), **view manifest** (read-only YAML).
-4. **Vercel/Cloudflare detail** — deployments list (state, branch, commit, duration, URL), function/worker status, links out. Safe action where supported: **trigger deploy / redeploy**.
-
-**Normalization rules (must be documented in code):** e.g., K8s pod `CrashLoopBackOff` → `failing`; Vercel `ERROR` → `failing`; Vercel `BUILDING` → `deploying`; missing metrics → `unknown` (never guess `healthy`).
+1. **Environment overview** — per environment: normalized status rollup (worst-of), workload count, last deploy time + version/SHA, provider icon, tier badge.
+2. **Environment detail (K8s)** — namespaces → workloads (Deployments/StatefulSets/CronJobs) → pods. Per pod: phase, readiness, restart count (highlight > 3), age, image tag, requests vs usage if metrics-server is available. Crash-looping pods float to the top, always.
+3. **Pod detail drawer** — recent events, container statuses, env-var *names* (values masked), live log tail (follow, pause, client-side grep). Safe actions: **restart workload** (rollout restart, never pod delete), **view manifest** (read-only YAML).
+4. **Vercel/Cloudflare detail** — deployments (state, branch, commit, duration, URL), function/worker status, link-outs. Safe action where the provider declares it: **trigger deploy / redeploy**.
 
 **Acceptance criteria:**
 - Switching environments never blocks the UI; stale data remains visible with its timestamp while new data loads.
-- Restart workload: confirmation dialog states env, tier, workload, and provider; `prod-like` tier additionally requires typing the workload name; action + result recorded in audit log.
-- Kubeconfig context missing/unreachable degrades to an inline error card for that environment only.
+- Restart workload: dialog states env, tier, workload, provider; `prod-like` requires typing the workload name; action + result audit-logged.
+- A missing/unreachable kube context degrades to an inline error card for that environment only.
 
-### 4.3 Module: API Playground (OpenAPI / Swagger / GraphQL)
+### 6.3 API Playground
 
-**Purpose:** Ingest API specs by URL and provide docs + examples + a request runner, so any engineer can learn and test an API without Postman.
+**Purpose:** Ingest API specs by URL; provide docs + examples + a request runner; visualize how APIs connect.
 
-**Service layer:**
-- **Ingestion:** fetch spec URL server-side; detect and parse OpenAPI 3.x, Swagger 2.0 (auto-convert to OAS3 internally via `swagger2openapi`), or GraphQL (introspection query against the URL, or SDL if the URL returns SDL). Cache parsed spec locally; "refresh spec" button; show spec version + fetch time.
-- **Request proxy:** all playground requests go through `/api/apis/proxy` so auth headers are injected server-side from `tokenEnv` and CORS is a non-issue. Per-service base URL selected by environment (from `baseUrls`).
+**Service layer:** `ApiProvider` (§2.2). Ingestion: fetch spec URL server-side; parse OpenAPI 3.x, Swagger 2.0 (auto-converted to OAS3 via `swagger2openapi`), or GraphQL (introspection, or SDL if returned). Cache parsed spec locally; "refresh spec" button; show spec version + fetch time. **Request proxy:** all playground requests go through `/api/apis/proxy` — auth headers injected server-side from `tokenEnv`, CORS a non-issue, base URL selected by environment.
 
-**Views:**
+**Panels:**
 
-1. **Service catalog** — configured services with API type badge, spec health (fetched OK / stale / failed), linked repo, available environments.
-2. **REST explorer** — three-pane: operations tree (grouped by tag) → operation doc (params, request/response schemas rendered human-readably, auto-generated example payloads from schema defaults/examples) → request runner (method/URL prefilled, editable headers/query/body with JSON validation, environment picker, **Send**). Response pane: status, latency, headers, pretty/raw body toggle. History of last 50 requests per service (persisted locally), with "copy as curl".
-3. **GraphQL explorer** — schema-aware editor (GraphiQL-style: autocomplete from introspected schema, docs sidebar, variables pane), same environment picker and history.
+1. **Service API catalog** — configured APIs with type badge, spec health (fetched OK / stale / failed), linked service/repo, available environments.
+2. **REST explorer** — three-pane: operations tree (by tag) → operation doc (params, schemas rendered human-readably, auto-generated examples) → request runner (prefilled method/URL, editable headers/query/body with JSON validation, environment picker, **Send**). Response: status, latency, headers, pretty/raw body. History of last 50 requests per API, persisted locally, with "copy as curl".
+3. **GraphQL explorer** — schema-aware editor (autocomplete from introspection, docs sidebar, variables pane), same environment picker and history.
+4. **API dependency map** — a graph view of service→service call edges: `checkout → catalog → pricing`. Edges sourced (in priority order) from OTel service-graph metrics, OpenAPI `links`/`x-dependencies`, and manual `dependsOn` config; provenance shown per edge. Clicking a node opens that service's cockpit; clicking an edge lists the operations involved where known. This is the "visualize the architecture" view.
 
-**Guardrails:** the proxy only sends requests to base URLs present in config (no arbitrary-URL relay). Mutating verbs (POST/PUT/PATCH/DELETE) against `prod-like`-tier base URLs show a warning banner before send.
+**Guardrails:** the proxy only sends to base URLs present in config (no arbitrary-URL relay). Mutating verbs against `prod-like` base URLs show a warning banner before send.
 
 **Acceptance criteria:**
-- A Swagger 2.0 spec URL and an OAS 3.1 URL both render docs and runnable examples with zero config beyond the URL.
+- A Swagger 2.0 URL and an OAS 3.1 URL both render docs and runnable examples with zero config beyond the URL.
 - GraphQL autocomplete works against any introspection-enabled endpoint.
-- Auth token never appears in the browser (verify via devtools network tab — header injected by proxy only).
+- Auth tokens never appear in the browser (verifiable in devtools — headers injected by proxy only).
+- The dependency map renders from manual `dependsOn` edges alone when no telemetry is available.
 
-### 4.4 Module: Observability
+### 6.4 Observability & Correlation
 
-**Purpose:** Quick health checks, error-rate and latency dashboards, and log search — the on-call landing zone.
+**Purpose:** Quick health checks, error-rate and latency views, log search — and, distinctively, **correlation**: connecting a symptom to its cause across providers. The app tells a story, not isolated facts.
 
-**Service layer:** Prometheus HTTP API (instant + range queries), Loki HTTP API (LogQL), Grafana API (dashboard metadata + snapshot-render links + deep links), Tempo (trace lookup by ID), Vercel observability API where available. All optional — each configured backend lights up its features; missing backends hide theirs.
+**Service layer:** `ObservabilityProvider` implementations — Prometheus HTTP API (instant + range), Loki (LogQL), Grafana (dashboard metadata + deep links), Tempo (trace by ID), Vercel observability where available. All optional; each configured backend lights up its panels.
 
-**Views:**
+**Panels:**
 
-1. **Health board** — the default screen at 2am. Grid of configured health checks (HTTP probes run from the local BFF, showing status + latency + last change) plus per-environment status rollups from Module 2, plus top-line error rate sparkline per service. One glance = "what's on fire."
-2. **Error rates** — per-service error-rate chart (Prometheus query templates, overridable per service in config), time-range picker (15m/1h/6h/24h/7d), deploy markers overlaid from Module 2's deploy history ("did the 14:32 deploy cause this?").
-3. **Latency** — per-route p50/p95/p99 table + chart, sourced from OTel/Prometheus histograms; for Next.js-on-Vercel, route-level data from Vercel's API. Sortable by p95 to find the slow route fast.
-4. **Log search** — LogQL-backed search with service/env/severity pickers compiled into label matchers, free-text filter, time range, live tail toggle. Log lines link to trace view when a `trace_id` is present (Tempo lookup). "Open in Grafana" deep link preserves the query.
-5. **Pinned Grafana dashboards** — embedded via Grafana's shareable panels where auth allows; otherwise rendered link cards. Never block on Grafana being reachable.
+1. **Health board** — grid of configured HTTP health checks (status + latency + last change, probed from the BFF) plus per-environment rollups plus top-line error sparkline per service. One glance = "what's on fire." Feeds §5.1.
+2. **Error rates** — per-service error-rate chart (default PromQL templates, overridable per service), time-range picker (15m/1h/6h/24h/7d), **deploy markers** overlaid from deploy history.
+3. **Latency** — per-route p50/p95/p99 table + chart from OTel/Prometheus histograms; Vercel route-level data for Next.js-on-Vercel. Sortable by p95.
+4. **Log search** — LogQL-backed with service/env/severity pickers compiled to label matchers, free-text filter, time range, live tail. Log lines link to traces when `trace_id` is present. "Open in Grafana" preserves the query.
+5. **Correlation thread** — the on-call storyline. Starting from any anomaly (error spike, failing health check, crash-looping pod), DCC walks the relationship graph and assembles a vertical timeline:
+
+```
+ 14:32  Deployment · checkout @ qa · a1b2c3d          deploy://…
+ 14:33  Error rate 0.2% → 4.7%                        dashboard://errors
+ 14:33  ✗ POST /orders 500 ×214                       logs://…
+        └ trace 4bf92f35 · NPE in PricingClient       trace://…
+ 14:32  PR #482 "Extract pricing client" · merged     pr://…
+        └ commit a1b2c3d · @jdoe                      repo://…
+ ─────
+ Suggested next steps:  ⏪ view diff · ⚡ restart workload · 📄 tail logs
+```
+
+Every row is a URI. The chain is heuristic (SHA match, time-window overlap, trace/log linkage) and each link states its evidence; DCC proposes the story, the engineer verifies it. v1 scope: deploy ↔ metric-window ↔ logs ↔ trace ↔ PR/commit/author.
+
+6. **Pinned Grafana dashboards** — embedded via shareable panels where auth allows; otherwise link cards. Never block on Grafana reachability.
 
 **Acceptance criteria:**
 - Health board renders meaningfully with *only* health-check URLs configured (no Prom/Loki required).
-- Log search round-trip (query → first results) < 2s against a healthy Loki for a 1h window.
-- Deploy markers appear on error-rate charts when Module 2 has deploy history for that service/env.
+- Log search round-trip < 2s against a healthy Loki for a 1h window.
+- Deploy markers appear on error-rate charts wherever deploy history exists for that service/env.
+- From an error spike, the correlation thread reaches the deploying PR/commit in ≤ 2 clicks when a SHA match exists.
 
 ---
 
-## 5. Cross-Cutting Features
+## 7. Cross-Cutting Features
 
-### 5.1 Command palette (⌘K)
-Global fuzzy palette: jump to any repo/environment/service/dashboard, run "safe actions" (with the same confirmations), toggle theme density, pause polling. Every navigable entity is indexed. This is the primary navigation for power users.
+### 7.1 Safe-action framework
+- Single executor at `/api/actions/*`; every action declares `{ id, provider, targetUri, tier, requiredConfirmation }`.
+- Confirmation UX: standard dialog for `sandbox`/`shared`; typed-name confirmation for `prod-like`; dialogs state exactly what will happen and against what. Identical whether invoked from a panel or the palette.
+- **Audit log:** append-only JSONL at `~/.dcc/audit.log` — `{ ts, action, targetUri, env, result, durationMs }`. Viewable in-app (Settings → Audit).
+- Kill switch: `actions.enabled: false` hides all action affordances app-wide.
 
-### 5.2 Safe-action framework
-- Single executor at `/api/actions/*`; every action declares `{ id, provider, targetRef, tier, requiredConfirmation }`.
-- Confirmation UX: standard dialog for `sandbox`/`shared`; typed-name confirmation for `prod-like`; all dialogs state exactly what will happen and against what.
-- **Audit log:** append-only JSONL at `~/.dcc/audit.log` — `{ ts, action, target, env, result, durationMs }`. Viewable in-app (Settings → Audit).
-- Kill switch: `actions.enabled: false` in config hides all action affordances app-wide.
-
-### 5.3 Workspace status bar
-Persistent bottom bar: active workspace name, polling status, aggregate alert count, clock, and a "system OK / N issues" beacon that mirrors the health board.
+### 7.2 Workspace status bar
+Persistent bottom bar: active workspace name, active layout preset, polling status, aggregate alert count, clock, and a "system OK / N issues" beacon mirroring Workspace Health.
 
 ---
 
-## 6. UX & Design Direction (for Claude Design)
+## 8. UX & Design Direction (for Claude Design)
 
 - **Theme:** dark-only in v1. Near-black background (not pure #000), one accent color, restrained syntax-highlight palette for logs/JSON. Status colors are the only saturated colors on screen: green/amber/red/blue(deploying)/gray(unknown) — colorblind-safe pairs with icons, never color alone.
-- **Density:** information-dense but calm. Tables over cards where data is comparable. Generous line-height in logs. Monospace (JetBrains Mono or similar) for identifiers, logs, JSON; a clean grotesque for UI chrome.
-- **Layout:** left icon rail (Repos / Environments / APIs / Observability / Settings), content area, right-side drawers for detail (pod drawer, request history) so context is never lost. Status bar bottom.
-- **Motion:** minimal; only state-change transitions (status color fades, drawer slides). No skeleton shimmer storms — prefer stale-data-with-timestamp over spinners.
-- **Empty/error states:** every panel needs a designed empty state ("No repos configured → Add in Settings") and a degraded state (upstream unreachable) — these are first-class screens, not afterthoughts.
-- **Screen inventory to design:** Health board, Repo grid, Repo detail (4 tabs), Security rollup, Environment overview, K8s environment detail, Pod drawer, Vercel/CF detail, Service catalog, REST explorer, GraphQL explorer, Log search, Error/latency dashboards, Settings (per-section forms + connection tests + config diff), Config-repair screen, Command palette, Audit log, all confirmation dialogs.
+- **Density:** information-dense but calm. Tables over cards where data is comparable. Generous line-height in logs. Monospace (JetBrains Mono or similar) for identifiers, URIs, logs, JSON; a clean grotesque for UI chrome.
+- **Layout:** left rail = **services** (status-dotted) with capability lenses beneath; content area = the panel grid; right-side drawers for object detail (pod drawer, Related Resources) so context is never lost; status bar bottom.
+- **Motion:** minimal; only state-change transitions (status color fades, drawer slides, panel swap). No skeleton shimmer storms — prefer stale-data-with-timestamp over spinners.
+- **Empty/error states:** every panel needs a designed empty state ("No services configured → Add in Settings") and a degraded state (provider unreachable) — first-class designs, not afterthoughts.
+- **Surface inventory to design:** Workspace Health (home), service left rail, Service Cockpit (default layout), the full panel library (§5.3) in grid slots, panel maximized state, layout preset switcher, command palette (all states incl. progressive narrowing and inline action confirm), Related Resources panel + drawer, correlation thread, API dependency map, pod drawer, Settings (per-section forms + reference pickers + connection tests + config diff), config-repair screen, audit log, all confirmation dialogs (standard + typed-name), degraded/empty states for every panel.
 
 ---
 
-## 7. Tech Stack & Implementation Notes (for Claude Code)
+## 9. Tech Stack & Implementation Notes (for Claude Code)
 
 | Concern | Choice |
 |---|---|
 | Framework | Next.js 15+ (App Router), React 19, TypeScript strict |
 | Styling | Tailwind CSS v4 + shadcn/ui (Radix under the hood) |
-| Client/UI state | Zustand (palette state, selections, drawer stack, polling toggle) |
+| Client/UI state | Zustand (layouts, palette, selections, drawer stack, polling toggle) |
 | Server-state cache | TanStack Query (polling, retries, stale-while-revalidate) |
-| Validation | Zod schemas, generated in tandem with JSON Schema (`zod-to-json-schema`) |
+| Panel layout | v1: CSS-grid slot engine (own code, small); v2 path: `dockview` |
+| URI routing | Internal resolver `Uri → { panel, params }`; mirrored to URL for deep links |
+| Relationship graph | In-memory adjacency (plain maps) behind `/api/graph/*`; rebuilt on config load, enriched by providers |
+| Validation | Zod schemas, generated in tandem with JSON Schema (`zod-to-json-schema`); reference-integrity pass |
 | K8s | `@kubernetes/client-node` |
 | OpenAPI | `@readme/openapi-parser` or `@apidevtools/swagger-parser` + `swagger2openapi` |
 | GraphQL | `graphql` + introspection; CodeMirror 6 for the editor |
-| Charts | `recharts` (or lightweight `uPlot` for high-frequency series) |
+| Charts / graph viz | `recharts` (or `uPlot` for high-frequency series); force/dagre layout for the dependency map |
 | Logs streaming | SSE from route handlers |
 | Config file I/O | Node `fs` in route handlers + `chokidar` watcher |
 
-**Project conventions:** `src/lib/providers/*` for adapters, `src/lib/integrations/*` for GitHub/observability clients, `src/app/api/*` route handlers thin (validation + delegation), all upstream responses normalized at the integration layer before reaching the UI.
+**Project conventions:** `src/lib/domain/*` (canonical types + URI codec — the §3 vocabulary lives here and everything imports it), `src/lib/providers/{git,deployment,observability,api}/*` for interface + implementations, `src/lib/graph/*` for relationships, `src/app/api/*` route handlers thin (validation + delegation), all upstream responses normalized at the provider layer before reaching the UI.
 
 **Runtime:** `dcc dev` / `next start -p 7777`, bound to `127.0.0.1` only. No telemetry, no external calls except configured upstreams.
 
 ---
 
-## 8. Security Model
+## 10. Security Model
 
 1. **Localhost binding only** (`127.0.0.1`); refuse to start if configured otherwise without an explicit `--unsafe-host` flag.
 2. **Secrets** only from environment variables / `gh` CLI / kubeconfig; never written to disk by DCC; never sent to the browser; masked in all UI (env-var names shown, values never).
 3. **Request proxy allow-list:** playground and health checks can only call URLs derived from config.
-4. **Least-privilege guidance** in docs: read-mostly GitHub token scopes; kube contexts can be read-only service accounts except where restart is wanted.
-5. **Audit log** for every action (§5.2).
-6. **No prod tier assumed:** environments default to `shared`; `prod-like` must be opted into per environment, which activates stricter confirmations.
+4. **Least-privilege guidance** in docs: read-mostly Git token scopes; kube contexts can be read-only service accounts except where restart is wanted.
+5. **Audit log** for every action (§7.1).
+6. **No prod tier assumed:** environments default to `shared`; `prod-like` must be opted into per environment, activating stricter confirmations.
 
 ---
 
-## 9. Milestones (suggested Claude Code phasing)
+## 11. Milestones (suggested Claude Code phasing)
 
 | Phase | Scope | Exit criteria |
 |---|---|---|
-| **0. Skeleton** | App shell, config load/validate/repair screen, settings UI (read-only), theme, layout, palette shell | Boots with sample config; invalid config shows repair screen |
-| **1. GitHub** | Repo grid, repo detail, security rollup, re-run CI action + audit log | §4.1 acceptance criteria pass |
-| **2. Environments** | K8s provider, env overview/detail, pod drawer, log tail, restart action | §4.2 acceptance criteria pass (K8s only) |
-| **3. API Playground** | OpenAPI/Swagger ingestion, REST explorer, proxy; then GraphQL | §4.3 acceptance criteria pass |
-| **4. Observability** | Health board, error/latency views, Loki log search, deploy markers | §4.4 acceptance criteria pass |
-| **5. Providers+** | Vercel + Cloudflare adapters, Vercel observability, trigger-deploy action | Normalized status verified across 3 providers |
-| **6. Polish** | Settings full CRUD + connection tests + diff preview, audit viewer, empty/degraded states, keyboard map | Design QA against §6 |
+| **0. Foundation** | Domain model + URI codec, config load/validate (incl. reference integrity)/repair screen, provider interfaces (stubs), panel slot engine, theme, left rail, palette shell, Workspace Health (skeleton) | Boots with sample config; invalid config or dangling refs show repair screen; empty panels dock in preset slots |
+| **1. Git** | GitProvider (GitHub), repo grid/detail, workspace workflow-runs + security rollup panels, re-run CI action + audit log | §6.1 acceptance criteria pass |
+| **2. Environments + Cockpit** | K8s provider, env panels, pod drawer, log tail, restart action; service cockpit assembly from graph edges; Related Resources panel | §6.2 criteria pass; selecting a service assembles a bound cockpit |
+| **3. API Playground** | Spec ingestion (OAS3/Swagger2), REST explorer, proxy; then GraphQL; dependency map from `dependsOn` | §6.3 criteria pass (map from manual edges) |
+| **4. Observability** | Health board, error/latency panels, Loki log search, deploy markers; Workspace Health fully live | §6.4 criteria 1–3 pass |
+| **5. Correlation + palette depth** | Correlation thread (deploy↔metric↔log↔trace↔PR), palette progressive narrowing + actions, OTel-derived map edges | §6.4 criterion 4 and §5.4 criteria pass |
+| **6. Providers+** | Vercel + Cloudflare adapters, Vercel observability, trigger-deploy action | Normalized status verified across 3 providers |
+| **7. Polish** | Settings full CRUD + reference pickers + connection tests + diff preview, layout presets UX, audit viewer, empty/degraded states, keyboard map | Design QA against §8 |
 
 ---
 
-## 10. Open Questions (flag during redline)
+## 12. Open Questions (flag during redline)
 
-1. Should request history / playground bodies persist to disk (`~/.dcc/`) or stay in-memory per session? (Spec assumes disk, capped at 50/service.)
+1. Should request history / playground bodies persist to disk (`~/.dcc/`) or stay in-memory per session? (Spec assumes disk, capped at 50/API.)
 2. Wiz integration: API-level ingestion vs. link-out only in v1? (Spec assumes link-out with optional token-based summary.)
 3. Do CronJobs/Jobs need first-class K8s views in v1, or Deployments/StatefulSets only?
 4. Error-rate queries: ship opinionated default PromQL templates, or require per-service queries in config? (Spec assumes defaults + override.)
-5. Any appetite for a read-only "share this view" static export (e.g., snapshot HTML) for pasting into incident channels?
+5. Any appetite for a read-only "share this view" static export (e.g., snapshot HTML) for pasting into incident channels? (Correlation threads would export beautifully.)
+6. OTel-derived dependency edges assume service-graph metrics exist (e.g., Tempo metrics-generator). Is that available in your stack, or should v1 lean on manual `dependsOn` + OpenAPI links only?
+7. Correlation confidence: should low-evidence links (time-window overlap only, no SHA/trace match) be shown with a "weak" badge, or hidden entirely?
+8. Palette index scale: at what workspace size (pods churn constantly) do we cap leaf-object indexing and fall back to on-demand descent? (Spec assumes full index ≤ ~2k URIs.)
