@@ -5,7 +5,7 @@ Environment, Workload, Deploy, Artifact, Document, …) and the resource-URI
 codec that addresses them.
 
 Everything imports from here; this directory imports from nothing else in
-`lib/`. Providers normalize upstream payloads *into* these types before the
+`lib/`. Providers normalize upstream payloads _into_ these types before the
 data reaches a route handler or the UI — that is what keeps GitHub-shaped or
 Kubernetes-shaped fields from leaking across the app.
 

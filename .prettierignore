@@ -1,0 +1,12 @@
+# Build output
+.next/
+out/
+build/
+coverage/
+
+# Generated
+next-env.d.ts
+pnpm-lock.yaml
+
+# Vendored spec — preserve the author's line breaks and table alignment.
+docs/developer-control-center-spec.md

@@ -25,6 +25,6 @@ actions/   → safe-action executor + audit log
 ```
 
 Route handlers rather than Server Functions, deliberately: this layer is
-dominated by *reads* that want stable, addressable GET endpoints TanStack Query
+dominated by _reads_ that want stable, addressable GET endpoints TanStack Query
 can poll and cache by URL, SSE for log streaming, and an HTTP surface you can
 hit with `curl` when debugging DCC itself at 2am.

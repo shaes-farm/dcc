@@ -18,9 +18,9 @@ Developer Control Center exists to bring that knowledge together. It is a worksp
 
 Three things define what it is in practice:
 
-* **Local-only.** It runs on your machine, binds to localhost, and uses the credentials already there — your `gh` auth, your kubeconfig, your environment variables. Single user. No hosted service, no server-side tenancy, no secrets stored on disk.
-* **Project-agnostic.** Everything it shows is driven by a JSON config file, so the same tool adapts to any project following similar conventions — Git hosting for source, Kubernetes/Vercel/Cloudflare for hosting, OpenAPI/GraphQL for APIs, an OpenTelemetry/Grafana stack for observability.
-* **Organized around services, not tools.** You debug *Checkout*. You don't "look at Kubernetes."
+- **Local-only.** It runs on your machine, binds to localhost, and uses the credentials already there — your `gh` auth, your kubeconfig, your environment variables. Single user. No hosted service, no server-side tenancy, no secrets stored on disk.
+- **Project-agnostic.** Everything it shows is driven by a JSON config file, so the same tool adapts to any project following similar conventions — Git hosting for source, Kubernetes/Vercel/Cloudflare for hosting, OpenAPI/GraphQL for APIs, an OpenTelemetry/Grafana stack for observability.
+- **Organized around services, not tools.** You debug _Checkout_. You don't "look at Kubernetes."
 
 The goal is not to replace every tool developers already use. The goal is to eliminate the constant reconstruction of context required to use them.
 
@@ -30,17 +30,17 @@ The goal is not to replace every tool developers already use. The goal is to eli
 
 A developer working on an unfamiliar project must answer the same questions over and over:
 
-* What is this system?
-* How is it structured?
-* What services exist?
-* How do I run it?
-* What environment am I working in?
-* What changed recently?
-* What is currently broken?
-* Where is the documentation?
-* Why was it designed this way?
-* Who owns this area?
-* What should I do next?
+- What is this system?
+- How is it structured?
+- What services exist?
+- How do I run it?
+- What environment am I working in?
+- What changed recently?
+- What is currently broken?
+- Where is the documentation?
+- Why was it designed this way?
+- Who owns this area?
+- What should I do next?
 
 The answers exist, but they are fragmented. Developers spend significant time performing archaeology: searching repositories, reading documentation, inspecting configuration files, checking dashboards, exploring cloud consoles, asking teammates, and reconstructing decisions made months or years earlier.
 
@@ -64,7 +64,7 @@ The system should understand not only **what exists**, but also how pieces conne
 
 ### The Service Is the Unit of Thought
 
-The **Service** is the primary object — a logical application or component you actually think in terms of (Checkout, Storefront, UI Library). Navigation, search, and layout all organize around services. Selecting one opens its *cockpit*: repository state, running pods, deploys, logs, health, APIs, and dependencies, all bound to that service at once.
+The **Service** is the primary object — a logical application or component you actually think in terms of (Checkout, Storefront, UI Library). Navigation, search, and layout all organize around services. Selecting one opens its _cockpit_: repository state, running pods, deploys, logs, health, APIs, and dependencies, all bound to that service at once.
 
 Tool-centric views — all repositories, all environments, all APIs — remain available as alternate lenses. They are not the spine.
 
@@ -72,7 +72,7 @@ Configuration describes only what cannot be inferred. A service can be as small 
 
 ### The Knowledge Graph
 
-Underneath everything is a typed graph of edges between entities, modeling *engineering knowledge* rather than just runtime state: what runs where, but also what documents explain it, what decisions shaped it, what depends on it, and who owns it.
+Underneath everything is a typed graph of edges between entities, modeling _engineering knowledge_ rather than just runtime state: what runs where, but also what documents explain it, what decisions shaped it, what depends on it, and who owns it.
 
 Providers exist to enrich the graph. Panels exist to render slices of it. Search, context, correlation, and the dependency map are all just queries against it.
 
@@ -88,12 +88,12 @@ The first responsibility of the interface is orientation. The app opens onto **W
 
 Within seconds you should understand:
 
-* where you are
-* what system you are looking at
-* what state it is in
-* what has changed
-* what requires attention
-* what actions are available
+- where you are
+- what system you are looking at
+- what state it is in
+- what has changed
+- what requires attention
+- what actions are available
 
 A developer should not have to assemble the current state of a project from scattered sources.
 
@@ -168,7 +168,7 @@ Developer Control Center
 +-- Dependency Map        +-- Audit Log
 ```
 
-Panels are arranged into named **layout presets** — "Debugging," "Tech-lead review," "On-call" — so the workspace matches the job in front of you rather than a job title. Panels degrade independently: an unreachable provider turns *its* panels into inline error cards, and the layout stands.
+Panels are arranged into named **layout presets** — "Debugging," "Tech-lead review," "On-call" — so the workspace matches the job in front of you rather than a job title. Panels degrade independently: an unreachable provider turns _its_ panels into inline error cards, and the layout stands.
 
 ### 3. Everything Is Addressable
 
@@ -198,9 +198,9 @@ Mechanically, every integration category sits behind a provider interface — Gi
 
 ### 5. Read-Heavy, Write-Careful
 
-This is primarily an inspection tool. A small set of *safe actions* exists — restart a workload, re-run CI, trigger a deploy — always behind explicit confirmation, always audit-logged to an append-only file you can read. Environments marked `prod-like` require typed-name confirmation. Destructive and irreversible operations are out of scope entirely.
+This is primarily an inspection tool. A small set of _safe actions_ exists — restart a workload, re-run CI, trigger a deploy — always behind explicit confirmation, always audit-logged to an append-only file you can read. Environments marked `prod-like` require typed-name confirmation. Destructive and irreversible operations are out of scope entirely.
 
-DCC never stores secrets. Config files reference environment variable *names*, never values, and credentials never reach the browser.
+DCC never stores secrets. Config files reference environment variable _names_, never values, and credentials never reach the browser.
 
 ---
 
@@ -218,10 +218,10 @@ Software systems change constantly. Developer Control Center exists to preserve 
 
 A developer should open Developer Control Center and immediately understand:
 
-* the state of the system
-* the structure of the system
-* the lineage of what is running
-* the available actions
+- the state of the system
+- the structure of the system
+- the lineage of what is running
+- the available actions
 
 without needing to hunt through tools, documents, or tribal knowledge.
 
@@ -233,14 +233,14 @@ That is the mission.
 
 A local Next.js application. Concretely:
 
-| Concern | Choice |
-| --- | --- |
-| Framework | Next.js 15+ (App Router), React 19, TypeScript strict |
-| Styling | Tailwind CSS v4 + shadcn/ui, dark-only in v1 |
-| Client state | Zustand (layouts, palette, selections, polling toggle) |
-| Server-state cache | TanStack Query (polling, retries, stale-while-revalidate) |
-| Service layer | Route handlers as a local BFF — credentials stay server-side |
-| Runtime | `dcc dev` / `next start -p 7777`, bound to `127.0.0.1` only |
+| Concern            | Choice                                                       |
+| ------------------ | ------------------------------------------------------------ |
+| Framework          | Next.js 15+ (App Router), React 19, TypeScript strict        |
+| Styling            | Tailwind CSS v4 + shadcn/ui, dark-only in v1                 |
+| Client state       | Zustand (layouts, palette, selections, polling toggle)       |
+| Server-state cache | TanStack Query (polling, retries, stale-while-revalidate)    |
+| Service layer      | Route handlers as a local BFF — credentials stay server-side |
+| Runtime            | `dcc dev` / `next start -p 7777`, bound to `127.0.0.1` only  |
 
 Configuration lives in `dcc.config.json` (overridable via the `DCC_CONFIG` environment variable), validated against a published JSON Schema for editor autocomplete, and editable through a settings UI that writes back to the same file. Invalid config never crashes the app — it boots into a repair screen listing the errors.
 
@@ -250,24 +250,24 @@ No telemetry. No external calls except the upstreams you configure.
 
 For v1, DCC is explicitly **not**:
 
-* a CI/CD system, an IaC tool, or a replacement for `kubectl` or Grafana power use
-* multi-user — no auth, no RBAC, no hosted deployment
-* capable of destructive or irreversible actions (delete namespace, force-push, merge PRs, scale to zero)
-* an alerting engine — it *surfaces* alerts; it does not page you
-* a metrics or log store — everything is queried live, with only a small local cache
+- a CI/CD system, an IaC tool, or a replacement for `kubectl` or Grafana power use
+- multi-user — no auth, no RBAC, no hosted deployment
+- capable of destructive or irreversible actions (delete namespace, force-push, merge PRs, scale to zero)
+- an alerting engine — it _surfaces_ alerts; it does not page you
+- a metrics or log store — everything is queried live, with only a small local cache
 
 ## Roadmap
 
-| Phase | Scope |
-| --- | --- |
-| **0** | Vertical slice: domain model, URIs, config + inference, GitHub end-to-end, minimal cockpit |
+| Phase | Scope                                                                                        |
+| ----- | -------------------------------------------------------------------------------------------- |
+| **0** | Vertical slice: domain model, URIs, config + inference, GitHub end-to-end, minimal cockpit   |
 | **1** | Git depth: repo grid, workflow runs, security rollup; repo-markdown knowledge, Context panel |
-| **2** | Environments: Kubernetes provider, pods, logs, restart action, derived lineage strip |
-| **3** | API Playground: spec ingestion, REST and GraphQL explorers, dependency map |
-| **4** | Observability: health board, error and latency panels, log search, deploy markers |
-| **5** | Correlation threads and command palette depth |
-| **6** | More providers: Vercel, Cloudflare, artifact registries |
-| **7** | Polish: full settings CRUD, layout preset UX, audit viewer, keyboard map |
+| **2** | Environments: Kubernetes provider, pods, logs, restart action, derived lineage strip         |
+| **3** | API Playground: spec ingestion, REST and GraphQL explorers, dependency map                   |
+| **4** | Observability: health board, error and latency panels, log search, deploy markers            |
+| **5** | Correlation threads and command palette depth                                                |
+| **6** | More providers: Vercel, Cloudflare, artifact registries                                      |
+| **7** | Polish: full settings CRUD, layout preset UX, audit viewer, keyboard map                     |
 
 Full scope and exit criteria per phase are in §11 of [the spec](docs/developer-control-center-spec.md).
 

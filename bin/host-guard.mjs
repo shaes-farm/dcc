@@ -24,7 +24,10 @@ const LOOPBACK_NAMES = new Set(["localhost", "ip6-localhost", "ip6-loopback"]);
  * zero-compressed spellings Node accepts.
  */
 function isIpv6Loopback(host) {
-  const bare = host.replace(/^\[|\]$/g, "").split("%")[0].toLowerCase();
+  const bare = host
+    .replace(/^\[|\]$/g, "")
+    .split("%")[0]
+    .toLowerCase();
   if (bare === "::1" || bare === "0:0:0:0:0:0:0:1") return true;
   const mapped = bare.match(/^::ffff:(.+)$/);
   return mapped ? isIpv4Loopback(mapped[1]) : false;
@@ -34,7 +37,8 @@ function isIpv6Loopback(host) {
 function isIpv4Loopback(host) {
   const octets = host.split(".");
   if (octets.length !== 4) return false;
-  if (!octets.every((o) => /^\d{1,3}$/.test(o) && Number(o) <= 255)) return false;
+  if (!octets.every((o) => /^\d{1,3}$/.test(o) && Number(o) <= 255))
+    return false;
   return octets[0] === "127";
 }
 
