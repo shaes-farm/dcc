@@ -1,9 +1,10 @@
 # Developer Control Center (DCC) — Product & Technical Specification
 
-**Version:** 0.2 (redline incorporated)
+**Version:** 0.3 (frozen as architectural north star — build from here)
 **Status:** Ready for Claude Design (UI) and Claude Code (implementation) handoff
 **Deployment model:** Local-only tool. Runs on the developer's machine, binds to localhost, uses the developer's own credentials. Single user, no server-side multi-tenancy.
 **Changelog 0.1 → 0.2:** Service is now the primary navigation object; formal Domain Model with resource URIs added (§3); all integrations generalized behind provider interfaces, not just deployments (§2.2); config restructured as a reference graph (§4); Workspace Health is the home screen (§5.1); UI recast as dockable panels with layout presets (§5.3); command palette promoted to a first-class spec (§5.4); Related Resources panel added (§5.5); cross-repo Git queries, API cross-linking, and observability correlation threads added (§6).
+**Changelog 0.2 → 0.3:** The graph is elevated to the **Knowledge Graph** — the application's central data structure, modeling engineering knowledge, not just runtime (§3.3); **Document** added as a canonical object with `doc://` URIs (§3.1); `DocumentationProvider` generalized to **KnowledgeProvider**, with a minimal repo-markdown implementation in v1 (§2.2, §6.5); Related Resources renamed **Context** (§5.5); services become inference-first — config describes only what cannot be inferred (§4.2); product framing sharpened to *an IDE for distributed systems* (§1); Phase 0 refocused to domain model + provider interfaces + GitHub end-to-end + minimal cockpit (§11). Spec is now frozen; further sophistication should be earned in code.
 
 ---
 
@@ -15,13 +16,15 @@ It is **project-agnostic**: everything it shows is driven by a JSON config file 
 
 Crucially, DCC is organized around the engineer's mental model, not the tools': you debug *Checkout*, you don't "look at Kubernetes." The **Service** is the primary object; tools are lenses onto it.
 
+The mental model to build toward: **an IDE for distributed systems.** Where VS Code composes editor + filesystem + terminal + git + debugger around source code, DCC composes services + runtime + deployments + APIs + observability + knowledge around the *running system* — because in cloud-native work, the running system, not the source tree, is the primary artifact. This framing should guide product decisions: like an IDE, DCC is a stable shell (domain model, URIs, panels, palette, Knowledge Graph) into which providers plug capabilities.
+
 ### 1.1 Design principles
 
 1. **The Service is the unit of thought.** Navigation, search, and layout organize around services (Checkout, Storefront, UI Library). Tool-centric views (all repos, all environments) remain as alternate lenses, not the spine.
 2. **Glanceable first, drill-down second.** Every surface answers "is anything broken?" in under 2 seconds before offering detail. Workspace Health is the front door.
 3. **Everything is addressable.** Every entity has a stable resource URI (§3.2). If you can see it, you can link to it, palette-jump to it, favorite it, and relate it to other things.
 4. **Read-heavy, write-careful.** The app is primarily an inspection tool. A small set of *safe actions* (restart workload, re-run CI, trigger deploy) is allowed, always behind explicit confirmation, always audit-logged.
-5. **Config as truth, shaped as a graph.** The JSON file is the source of truth; entities reference each other by ID, nothing is duplicated. The settings UI is a friendly editor for that file, not a separate database.
+5. **Config describes only what cannot be inferred.** The JSON file is the source of truth for *identity and intent*; entities reference each other by ID and nothing is duplicated — but wherever a relationship can be derived (from manifests, labels, specs, telemetry), DCC infers it, and explicit config exists to override or fill gaps (§4.2). The settings UI is a friendly editor for that file, not a separate database.
 6. **Bring your own credentials.** DCC never stores secrets. It uses credentials already on the machine (`gh` auth, kubeconfig, env vars).
 7. **2am-proof UX.** Dark, minimal, high-contrast where it matters, no decorative noise, obvious status colors, forgiving of a tired brain.
 
@@ -41,7 +44,7 @@ Crucially, DCC is organized around the engineer's mental model, not the tools': 
 - No destructive/irreversible actions (delete namespace, force-push, merge PRs, scale to zero in prod-like envs).
 - No alerting engine of its own (it *surfaces* alerts; it doesn't page you).
 - No persistence of metrics/logs (always queried live from upstream; small local cache only).
-- Provider *interfaces* for issues and documentation are defined (§2.2) but no implementations ship in v1.
+- Provider *interfaces* for issues are defined (§2.2) but no implementations ship in v1; knowledge ships only its minimal repo-markdown implementation (§6.5).
 
 ---
 
@@ -62,7 +65,7 @@ Crucially, DCC is organized around the engineer's mental model, not the tools': 
 │   ├─ /api/deploy/*     → DeploymentProvider impls (K8s/…)    │
 │   ├─ /api/apis/*       → ApiProvider: spec ingest + proxy    │
 │   ├─ /api/obs/*        → ObservabilityProvider impls         │
-│   ├─ /api/graph/*      → Relationship graph queries          │
+│   ├─ /api/graph/*      → Knowledge graph queries          │
 │   ├─ /api/config/*     → Read/validate/write JSON config     │
 │   └─ /api/actions/*    → Safe-action executor + audit log    │
 └──────────────────────────────────────────────────────────────┘
@@ -90,7 +93,7 @@ Every integration category — not just deployments — sits behind a provider i
 ```ts
 interface Provider {
   id: string;                                  // "github", "k8s", "vercel", "loki", …
-  kind: "git" | "deployment" | "observability" | "api" | "issue" | "documentation";
+  kind: "git" | "deployment" | "observability" | "api" | "issue" | "knowledge";
   capabilities(): Capability[];
   testConnection(): Promise<ConnectionResult>; // powers Settings "test" buttons
 }
@@ -127,18 +130,24 @@ interface ApiProvider extends Provider {
   proxyRequest(req: PlaygroundRequest): Promise<PlaygroundResponse>;
 }
 
+interface KnowledgeProvider extends Provider {
+  listDocuments(scope: Uri | "workspace"): Promise<DocumentRef[]>;  // ADRs, RFCs, runbooks, READMEs…
+  getDocument(doc: Uri): Promise<Document>;                         // normalized: title, kind, body (md), source
+}
+
 // Defined for future-proofing; no v1 implementations:
 interface IssueProvider extends Provider { /* Jira, Linear, GitHub Issues-as-tracker */ }
-interface DocumentationProvider extends Provider { /* ADRs, wikis, runbooks */ }
 ```
+
+`KnowledgeProvider` deliberately generalizes "documentation": repo markdown, GitHub wikis, Notion, Confluence, Obsidian vaults, and Google Docs are all just knowledge sources that emit `Document`s into the Knowledge Graph. **v1 ships one trivial implementation** — *repo-markdown*, which discovers `README*`, `docs/**`, and `adr|adrs|rfcs/**` through the Git provider (§6.5) — so `doc://` URIs and the Context panel have real content from day one. Richer sources plug in later without touching the UI.
 
 **Normalized status vocabulary** across all deployment providers: `healthy | degraded | failing | deploying | unknown`. Mapping rules must be documented in code (e.g., K8s `CrashLoopBackOff` → `failing`; Vercel `BUILDING` → `deploying`; missing metrics → `unknown`, never guess `healthy`). The UI only ever renders the normalized vocabulary.
 
 ---
 
-## 3. Domain Model & Addressability
+## 3. Domain Model, Addressability & the Knowledge Graph
 
-This section defines the canonical objects. Every panel, provider, and config entity builds on this vocabulary — new providers map *into* it, preventing drift as the platform grows.
+This section defines the canonical objects and the graph that connects them. Every panel, provider, and config entity builds on this vocabulary — new providers map *into* it, preventing drift as the platform grows.
 
 ### 3.1 Canonical objects
 
@@ -155,6 +164,7 @@ This section defines the canonical objects. Every panel, provider, and config en
 | **Dashboard** | A metrics view (pinned Grafana dashboard or built-in error/latency view). | ObservabilityProvider |
 | **HealthCheck** | An HTTP probe with expected status. | Config + BFF |
 | **LogStream / Trace** | Queryable log scope; a distributed trace. | ObservabilityProvider |
+| **Document** | A unit of engineering knowledge with a `kind`: ADR, RFC, runbook, incident, playbook, README, design doc, architecture note. Not "documentation" as a feature — a first-class node linkable to anything. | KnowledgeProvider |
 | **Action** | A safe, auditable operation against a target URI. | Action framework |
 | **Provider** | A configured integration instance. | Config |
 
@@ -175,6 +185,8 @@ workload://qa/checkout/deployment/checkout
 pod://qa/checkout/checkout-6df4cbf8b
 api://checkout/rest          op://checkout/rest/createOrder
 dashboard://grafana/uid-errors
+doc://repo-md/checkout-svc/docs/adr/0017-extract-pricing.md
+doc://repo-md/checkout-svc/runbooks/checkout-oncall.md
 logs://loki?service=checkout&env=qa
 trace://tempo/4bf92f35
 action://restartWorkload?target=workload://qa/checkout/deployment/checkout
@@ -183,20 +195,21 @@ action://restartWorkload?target=workload://qa/checkout/deployment/checkout
 **Rules:**
 - Anything rendered anywhere carries its URI: right-click/⌘-click → **Copy link**; pasting a URI into the palette navigates to it.
 - The internal router resolves `URI → panel + parameters`; browser deep links mirror URIs (`/r/service%3A%2F%2Fcheckout`).
-- Navigation history, favorites, layout presets, and the relationship graph all store URIs — nothing stores ad-hoc object shapes.
+- Navigation history, favorites, layout presets, and the Knowledge Graph all store URIs — nothing stores ad-hoc object shapes.
 - URIs make future plugins trivial: a plugin contributes URI schemes + panels, and palette/linking/relationships work automatically.
 
-### 3.3 The relationship graph
+### 3.3 The Knowledge Graph
 
-DCC maintains an in-memory graph of edges between URIs, rebuilt on config load and enriched at runtime:
+**The Knowledge Graph is the application.** It is DCC's central data structure — a typed graph of edges between URIs modeling *engineering knowledge*, not just runtime state: what runs where, but also what documents explain it, what decisions shaped it, what depends on it, and who owns it. Providers exist to enrich the graph; panels exist to render slices of it; the palette, Context panel, correlation threads, and dependency map are all just queries against it. Rebuilt on config load, enriched continuously at runtime.
 
 | Edge source | Examples |
 |---|---|
 | **Declared** (config references, §4) | `service://checkout —has-repo→ repo://…`, `—runs-in→ env://qa`, `—exposes→ api://checkout/rest`, `—measured-by→ dashboard://…` |
-| **Derived from providers** | deploys ↔ commits/PRs (SHA match), pods ↔ workloads ↔ services (label/selector match), alerts ↔ repos ↔ services |
-| **Derived from telemetry/specs** | service → service call edges from OTel service-graph metrics or OpenAPI `links`; manual `dependsOn` config edges as fallback |
+| **Inferred from providers** | deploys ↔ commits/PRs (SHA match), pods ↔ workloads ↔ services (label/selector match), alerts ↔ repos ↔ services, repo manifests → services (§4.2) |
+| **Inferred from telemetry/specs** | service → service call edges from OTel service-graph metrics or OpenAPI `links`; manual `dependsOn` config edges as fallback |
+| **Knowledge** | `service://checkout —explained-by→ doc://…adr/0017…`, `—runbook→ doc://…checkout-oncall…`, `—owned-by→ CODEOWNERS entry`; doc→doc links from markdown cross-references |
 
-The graph powers the Related Resources panel (§5.5), correlation threads (§6.4), the service dependency map (§6.3), and palette context. `/api/graph/related?uri=…` returns typed edges.
+Every edge carries provenance (`declared | inferred | telemetry | knowledge`) and, for inferred edges, its evidence. `/api/graph/related?uri=…` returns typed edges; `/api/graph/path?from=…&to=…` supports correlation threads.
 
 ---
 
@@ -262,28 +275,17 @@ The config is shaped as **keyed collections + ID references**: every entity is d
   ],
 
   "services": [
+    { "id": "storefront" },                       // inference-first: everything below is derived (§4.2)
+    { "id": "ui-kit" },                           // libraries are services too
+    { "id": "catalog", "apis": ["catalog-graph"] },
     {
-      "id": "checkout",
+      "id": "checkout",                           // every field below is an *override* of inference (§4.2)
       "name": "Checkout Service",
-      "repository": "checkout-svc",
-      "environments": ["dev", "qa"],
+      "repository": "checkout-svc",               // needed: repo id ≠ service id
       "workloadSelector": { "namespace": "checkout", "labels": { "app": "checkout" } },
-      "apis": ["checkout-rest"],
       "baseUrls": { "dev": "https://dev.acme.dev/checkout", "qa": "https://qa.acme.dev/checkout" },
-      "dashboards": ["errors", "latency"],
-      "healthChecks": ["hc-checkout"],
       "dependsOn": ["catalog"]                    // manual edge; OTel-derived edges merge in
-    },
-    {
-      "id": "storefront",
-      "name": "Storefront",
-      "repository": "storefront",
-      "environments": ["qa", "preview"],
-      "healthChecks": ["hc-storefront"],
-      "dependsOn": ["checkout"]
-    },
-    { "id": "catalog", "name": "Catalog GraphQL", "apis": ["catalog-graph"], "environments": ["qa"] },
-    { "id": "ui-kit", "name": "UI Library", "repository": "ui-kit" }   // libraries are services too
+    }
   ],
 
   "actions": {
@@ -296,7 +298,27 @@ The config is shaped as **keyed collections + ID references**: every entity is d
 }
 ```
 
-### 4.2 Settings UI
+### 4.2 Inference-first services
+
+**Configuration describes only what cannot be inferred.** A service can be as small as `{ "id": "checkout" }`; DCC's **resolver** derives the rest by walking conventions, in a documented order, at config load (and refreshes as providers report):
+
+| Step | Inference | From |
+|---|---|---|
+| 1 | Repository | `repositories[]` entry whose `id` or `name` matches the service id |
+| 2 | APIs | Spec discovery: OpenAPI/GraphQL endpoints advertised in the repo (well-known paths, `package.json`/manifest hints) or `apis[]` entries whose id is prefixed by the service id |
+| 3 | Environments & workloads | Workloads across configured environments whose labels/name match the service id (K8s label conventions: `app`, `app.kubernetes.io/name`) |
+| 4 | Deployments & base URLs | From matched workloads' provider metadata (ingress/route where derivable) |
+| 5 | Dashboards & health checks | `dashboards[]` / `healthChecks[]` entries tagged with or named after the service |
+| 6 | Documents & owners | Repo-markdown discovery (README, docs/**, ADRs, runbooks) + `CODEOWNERS` |
+| 7 | Dependencies | OTel service-graph → OpenAPI `links` → manual `dependsOn` |
+
+**Rules:**
+- **Explicit config always overrides inference** — field-level, not object-level (declaring `repository` doesn't disable workload inference).
+- Every inferred binding is an edge in the Knowledge Graph with provenance and evidence, so nothing is magic.
+- **Resolved-config inspector** (Settings → Resolution): shows, per service, every binding with its source — `repository: checkout-svc (inferred: name match)` / `baseUrl.qa: … (declared)` — plus unmatched entities ("workload `payments` in qa matched no service"). This is mandatory: inference without inspection is a 2am trap.
+- Inference conflicts (two candidate matches) resolve to *no binding* + a resolution warning, never a guess.
+
+### 4.3 Settings UI
 
 - Full CRUD over every config section via forms (shadcn/ui), with Zod validation mirrored from the JSON Schema — one schema definition generates both. Reference fields render as pickers over existing IDs (no free-text foreign keys).
 - Writes back to the JSON file deterministically (stable key order; plain JSON, no comments). A diff preview is shown before save.
@@ -329,7 +351,7 @@ Every number and row is a drill-down (it's a URI). "Attention needed" is ranked 
 
 ### 5.2 Service-centric navigation
 
-The left rail lists **services** (from config), each with a status dot rolled up from everything related to it. Selecting a service opens its **cockpit** — a preset layout of panels automatically bound to that service via the relationship graph:
+The left rail lists **services** (from config + inference, §4.2), each with a status dot rolled up from everything related to it. Selecting a service opens its **cockpit** — a preset layout of panels automatically bound to that service via the Knowledge Graph:
 
 ```
 Checkout                                          ● degraded
@@ -351,7 +373,7 @@ Every capability in §6 ships as a **panel**: a self-contained, URI-parameterize
 
 - **Layouts** are named arrangements of panels, savable as **presets** ("Debugging", "Tech-lead review", "On-call"). Presets persist to `~/.dcc/layouts.json` and are palette-switchable.
 - **v1 docking model (deliberately constrained):** a slot-based grid — split, resize, swap, and maximize panels within preset slots — rather than fully free-form floating/tabbed docking. Free-form docking (dockview-style) is the v2 upgrade path; the panel contract is identical either way. This keeps Phase 0 tractable without painting us into a corner.
-- Panel library (v1): Workspace Health, Service Cockpit slots, Repos grid, PRs, Workflow Runs, Security, Environments, Pods, Pod detail, Deploys, Logs, Log search, REST explorer, GraphQL explorer, Health board, Error rates, Latency, Pinned dashboard, Related Resources, Audit log.
+- Panel library (v1): Workspace Health, Service Cockpit slots, Repos grid, PRs, Workflow Runs, Security, Environments, Pods, Pod detail, Deploys, Logs, Log search, REST explorer, GraphQL explorer, Health board, Error rates, Latency, Pinned dashboard, Context, Documents, Document viewer, Audit log.
 - Panels degrade independently: an unreachable provider turns *its* panels into inline error cards; the layout stands.
 
 ### 5.4 Command palette (⌘K) — first-class spec
@@ -382,9 +404,9 @@ checkout                     restart checkout qa
 
 **Acceptance criteria:** first paint < 50ms after ⌘K; results < 100ms against a 500-URI index; every palette flow completable keyboard-only.
 
-### 5.5 Related Resources panel
+### 5.5 Context panel
 
-A dockable panel (and a drawer available from any object header) that answers "what's connected to this?" from the relationship graph:
+A dockable panel (and a drawer available from any object header) that renders the Knowledge Graph neighborhood of the current object. Not passive "related links" — it answers: **everything you need to understand this object**, runtime and knowledge alike:
 
 ```
 Checkout Service
@@ -394,10 +416,12 @@ Checkout Service
  APIs         → REST · (calls: catalog-graph)
  Dashboards   → Errors · Latency
  Security     → 3 CodeQL alerts
+ Documents    → ADR-0017 Extract pricing · Runbook: checkout on-call · README
+ Owners       → @payments-team (CODEOWNERS)
  Depends on   → catalog        Used by → storefront
 ```
 
-Every row is a URI link; edges show their provenance (declared / derived / telemetry) on hover. This panel is where the graph earns its keep — it should be present by default in every service cockpit.
+Every row is a URI link; edges show their provenance (declared / inferred / telemetry / knowledge) and evidence on hover. This panel is where the graph earns its keep — present by default in every service cockpit, and the on-call engineer's shortcut to the runbook.
 
 ---
 
@@ -478,7 +502,7 @@ The four capability families from v0.1 survive intact — as panel libraries bou
 2. **Error rates** — per-service error-rate chart (default PromQL templates, overridable per service), time-range picker (15m/1h/6h/24h/7d), **deploy markers** overlaid from deploy history.
 3. **Latency** — per-route p50/p95/p99 table + chart from OTel/Prometheus histograms; Vercel route-level data for Next.js-on-Vercel. Sortable by p95.
 4. **Log search** — LogQL-backed with service/env/severity pickers compiled to label matchers, free-text filter, time range, live tail. Log lines link to traces when `trace_id` is present. "Open in Grafana" preserves the query.
-5. **Correlation thread** — the on-call storyline. Starting from any anomaly (error spike, failing health check, crash-looping pod), DCC walks the relationship graph and assembles a vertical timeline:
+5. **Correlation thread** — the on-call storyline. Starting from any anomaly (error spike, failing health check, crash-looping pod), DCC walks the Knowledge Graph and assembles a vertical timeline:
 
 ```
  14:32  Deployment · checkout @ qa · a1b2c3d          deploy://…
@@ -501,6 +525,16 @@ Every row is a URI. The chain is heuristic (SHA match, time-window overlap, trac
 - Deploy markers appear on error-rate charts wherever deploy history exists for that service/env.
 - From an error spike, the correlation thread reaches the deploying PR/commit in ≤ 2 clicks when a SHA match exists.
 
+### 6.5 Knowledge (v1: repo-markdown)
+
+**Purpose:** Make engineering knowledge a first-class citizen of the graph with near-zero ceremony.
+
+**Service layer:** `KnowledgeProvider` (§2.2). v1 implementation *repo-markdown*: discovers `README*`, `docs/**`, and `adr|adrs|rfcs|runbooks/**` in configured repos via the Git provider; classifies `kind` by path/frontmatter heuristics (`docs/adr/*` → ADR, `runbooks/*` → runbook, else note); extracts markdown cross-links as doc→doc edges; links documents to services via the resolver (§4.2 step 6).
+
+**Panels:** **Documents** (list for a service or the workspace, filterable by kind) and **Document viewer** (rendered markdown; internal links that resolve to workspace URIs navigate in-app, others open externally). Documents surface primarily through the Context panel and palette rather than as a destination.
+
+**Acceptance criteria:** a repo containing a README and `docs/adr/0017-*.md` yields `doc://` URIs, correct kinds, service linkage, and palette hits with zero configuration.
+
 ---
 
 ## 7. Cross-Cutting Features
@@ -520,10 +554,10 @@ Persistent bottom bar: active workspace name, active layout preset, polling stat
 
 - **Theme:** dark-only in v1. Near-black background (not pure #000), one accent color, restrained syntax-highlight palette for logs/JSON. Status colors are the only saturated colors on screen: green/amber/red/blue(deploying)/gray(unknown) — colorblind-safe pairs with icons, never color alone.
 - **Density:** information-dense but calm. Tables over cards where data is comparable. Generous line-height in logs. Monospace (JetBrains Mono or similar) for identifiers, URIs, logs, JSON; a clean grotesque for UI chrome.
-- **Layout:** left rail = **services** (status-dotted) with capability lenses beneath; content area = the panel grid; right-side drawers for object detail (pod drawer, Related Resources) so context is never lost; status bar bottom.
+- **Layout:** left rail = **services** (status-dotted) with capability lenses beneath; content area = the panel grid; right-side drawers for object detail (pod drawer, Context) so context is never lost; status bar bottom.
 - **Motion:** minimal; only state-change transitions (status color fades, drawer slides, panel swap). No skeleton shimmer storms — prefer stale-data-with-timestamp over spinners.
 - **Empty/error states:** every panel needs a designed empty state ("No services configured → Add in Settings") and a degraded state (provider unreachable) — first-class designs, not afterthoughts.
-- **Surface inventory to design:** Workspace Health (home), service left rail, Service Cockpit (default layout), the full panel library (§5.3) in grid slots, panel maximized state, layout preset switcher, command palette (all states incl. progressive narrowing and inline action confirm), Related Resources panel + drawer, correlation thread, API dependency map, pod drawer, Settings (per-section forms + reference pickers + connection tests + config diff), config-repair screen, audit log, all confirmation dialogs (standard + typed-name), degraded/empty states for every panel.
+- **Surface inventory to design:** Workspace Health (home), service left rail, Service Cockpit (default layout), the full panel library (§5.3) in grid slots, panel maximized state, layout preset switcher, command palette (all states incl. progressive narrowing and inline action confirm), Context panel + drawer (incl. Documents/Owners rows), Documents list + Document viewer, correlation thread, API dependency map, pod drawer, Settings (per-section forms + reference pickers + connection tests + config diff + Resolution inspector), config-repair screen, audit log, all confirmation dialogs (standard + typed-name), degraded/empty states for every panel.
 
 ---
 
@@ -537,7 +571,7 @@ Persistent bottom bar: active workspace name, active layout preset, polling stat
 | Server-state cache | TanStack Query (polling, retries, stale-while-revalidate) |
 | Panel layout | v1: CSS-grid slot engine (own code, small); v2 path: `dockview` |
 | URI routing | Internal resolver `Uri → { panel, params }`; mirrored to URL for deep links |
-| Relationship graph | In-memory adjacency (plain maps) behind `/api/graph/*`; rebuilt on config load, enriched by providers |
+| Knowledge graph | In-memory adjacency (plain maps) behind `/api/graph/*`; rebuilt on config load, enriched by providers |
 | Validation | Zod schemas, generated in tandem with JSON Schema (`zod-to-json-schema`); reference-integrity pass |
 | K8s | `@kubernetes/client-node` |
 | OpenAPI | `@readme/openapi-parser` or `@apidevtools/swagger-parser` + `swagger2openapi` |
@@ -565,16 +599,20 @@ Persistent bottom bar: active workspace name, active layout preset, polling stat
 
 ## 11. Milestones (suggested Claude Code phasing)
 
+Phase 0 is deliberately a **vertical slice**, not a horizontal foundation: the domain model, provider interfaces, and service cockpit proven end-to-end against one real provider (GitHub). If those concepts feel natural in a working app, everything else grows on top of them; if they don't, we find out in week one.
+
 | Phase | Scope | Exit criteria |
 |---|---|---|
-| **0. Foundation** | Domain model + URI codec, config load/validate (incl. reference integrity)/repair screen, provider interfaces (stubs), panel slot engine, theme, left rail, palette shell, Workspace Health (skeleton) | Boots with sample config; invalid config or dangling refs show repair screen; empty panels dock in preset slots |
-| **1. Git** | GitProvider (GitHub), repo grid/detail, workspace workflow-runs + security rollup panels, re-run CI action + audit log | §6.1 acceptance criteria pass |
-| **2. Environments + Cockpit** | K8s provider, env panels, pod drawer, log tail, restart action; service cockpit assembly from graph edges; Related Resources panel | §6.2 criteria pass; selecting a service assembles a bound cockpit |
+| **0. Vertical slice** | Domain model + URI codec, config load/validate/repair + inference resolver (v0: repo↔service matching), provider interfaces, **GitProvider (GitHub) end-to-end**, panel slot engine, **minimal service cockpit** (Repository/PRs/Security panels bound via the Knowledge Graph), palette shell, theme + left rail | Select a service → cockpit renders live GitHub data; every rendered object has a copyable URI; graph edges + provenance inspectable; invalid config or dangling refs show repair screen |
+| **1. Git depth + knowledge** | Repo grid/detail, workspace workflow-runs + security rollup, re-run CI action + audit log; repo-markdown KnowledgeProvider, Documents/viewer, Context panel v1; Workspace Health (git-scope) | §6.1 and §6.5 acceptance criteria pass |
+| **2. Environments** | K8s provider + resolver workload inference, env panels, pod drawer, log tail, restart action; cockpit gains Pods/Deploys/Logs; Resolution inspector | §6.2 criteria pass; `{ "id": "checkout" }` alone binds repo + workloads |
 | **3. API Playground** | Spec ingestion (OAS3/Swagger2), REST explorer, proxy; then GraphQL; dependency map from `dependsOn` | §6.3 criteria pass (map from manual edges) |
 | **4. Observability** | Health board, error/latency panels, Loki log search, deploy markers; Workspace Health fully live | §6.4 criteria 1–3 pass |
-| **5. Correlation + palette depth** | Correlation thread (deploy↔metric↔log↔trace↔PR), palette progressive narrowing + actions, OTel-derived map edges | §6.4 criterion 4 and §5.4 criteria pass |
+| **5. Correlation + palette depth** | Correlation thread (deploy↔metric↔log↔trace↔PR), palette progressive narrowing + actions, OTel-derived map + dependency edges | §6.4 criterion 4 and §5.4 criteria pass |
 | **6. Providers+** | Vercel + Cloudflare adapters, Vercel observability, trigger-deploy action | Normalized status verified across 3 providers |
 | **7. Polish** | Settings full CRUD + reference pickers + connection tests + diff preview, layout presets UX, audit viewer, empty/degraded states, keyboard map | Design QA against §8 |
+
+**A note on scope discipline:** this document is now the architectural north star, not a backlog. The biggest remaining risk is the spec becoming more sophisticated than the software needs to be. Resist expanding it; let further sophistication be earned by the working application, and fold learnings back here only when code proves them.
 
 ---
 
@@ -588,3 +626,5 @@ Persistent bottom bar: active workspace name, active layout preset, polling stat
 6. OTel-derived dependency edges assume service-graph metrics exist (e.g., Tempo metrics-generator). Is that available in your stack, or should v1 lean on manual `dependsOn` + OpenAPI links only?
 7. Correlation confidence: should low-evidence links (time-window overlap only, no SHA/trace match) be shown with a "weak" badge, or hidden entirely?
 8. Palette index scale: at what workspace size (pods churn constantly) do we cap leaf-object indexing and fall back to on-demand descent? (Spec assumes full index ≤ ~2k URIs.)
+9. Owners: is `CODEOWNERS` sufficient as the v1 ownership source, or is a config-level `owners` field needed for teams that don't maintain it?
+10. Inference trust: should inferred bindings require one-time acknowledgment in the Resolution inspector before driving *actions* (a restart against an inferred workload match), or is provenance display enough?
