@@ -20,32 +20,35 @@ is the order the objects actually connect in:
 Knowledge → Planning → Source → Build → Artifact → Deploy → Runtime → Observe
 ```
 
-| File               | Holds                                                                                        |
-| ------------------ | -------------------------------------------------------------------------------------------- |
-| `common.ts`        | `Status`, `Severity`, `IsoDateTime`, `Actor`, `CommitRef`                                    |
-| `uri.ts`           | `Uri`, `UriScheme` — the type; the codec is [#3](https://github.com/shaes-farm/dcc/issues/3) |
-| `provider.ts`      | `Provider` — a configured integration instance                                               |
-| `workspace.ts`     | `Workspace`, `Service`                                                                       |
-| `knowledge.ts`     | `Document`                                                                                   |
-| `git.ts`           | `Repository`, `PullRequest`, `Issue`, `Release`, `SecurityAlert`, `Dependency`               |
-| `build.ts`         | `WorkflowRun`                                                                                |
-| `artifact.ts`      | `Artifact`, `ArtifactProvenance`                                                             |
-| `deployment.ts`    | `Environment`, `Deployment`                                                                  |
-| `workload.ts`      | `Workload`, `Pod`                                                                            |
-| `api.ts`           | `Api`, `Operation`                                                                           |
-| `observability.ts` | `Dashboard`, `HealthCheck`, `LogStream`, `Trace`                                             |
-| `action.ts`        | `Action`                                                                                     |
-| `index.ts`         | The barrel — import `@/lib/domain`, never a submodule                                        |
+| File               | Holds                                                                          |
+| ------------------ | ------------------------------------------------------------------------------ |
+| `common.ts`        | `Status`, `Severity`, `IsoDateTime`, `Actor`, `CommitRef`                      |
+| `uri.ts`           | `Uri`, `UriScheme`, `ParsedUri` — and the codec that reads and writes them     |
+| `provider.ts`      | `Provider` — a configured integration instance                                 |
+| `workspace.ts`     | `Workspace`, `Service`                                                         |
+| `knowledge.ts`     | `Document`                                                                     |
+| `git.ts`           | `Repository`, `PullRequest`, `Issue`, `Release`, `SecurityAlert`, `Dependency` |
+| `build.ts`         | `WorkflowRun`                                                                  |
+| `artifact.ts`      | `Artifact`, `ArtifactProvenance`                                               |
+| `deployment.ts`    | `Environment`, `Deployment`                                                    |
+| `workload.ts`      | `Workload`, `Pod`                                                              |
+| `api.ts`           | `Api`, `Operation`                                                             |
+| `observability.ts` | `Dashboard`, `HealthCheck`, `LogStream`, `Trace`                               |
+| `action.ts`        | `Action`                                                                       |
+| `index.ts`         | The barrel — import `@/lib/domain`, never a submodule                          |
 
 ## Conventions
 
-- **Plain TypeScript types, no runtime dependencies.** These are the normalized
-  _output_ of providers, not untrusted input; Zod belongs at the config
-  ([#6](https://github.com/shaes-farm/dcc/issues/6)) and route-handler
-  boundaries, where external data actually enters.
+- **Plain TypeScript types, no external dependencies.** These are the
+  normalized _output_ of providers, not untrusted input; Zod belongs at the
+  config ([#6](https://github.com/shaes-farm/dcc/issues/6)) and route-handler
+  boundaries, where external data actually enters. The URI codec is the one
+  piece of runtime code here, because a URI's grammar has to live with the
+  vocabulary it addresses.
 - **Every addressable object carries `uri`.** Anything rendered is copyable as
   a link, and history, favorites, layout presets, and graph edges store URIs
-  and nothing else (§3.2).
+  and nothing else (§3.2). `formatUri` and `toUri` are the only ways to mint
+  one — a `Uri` is branded, so a bare string cannot drift into a URI field.
 - **Timestamps are ISO-8601 strings**, never `Date` — these shapes cross the
   route-handler JSON boundary and are cached by TanStack Query.
 - **Closed unions ship as a `const` array plus a derived type**
@@ -77,8 +80,11 @@ objects in §3.1, but §3.2 enumerates no scheme for them and §5.4 does not ind
 them in the palette. They carry no `uri` here and are reached through a parent
 — the repository, the service, or Settings.
 
-Resolving this means amending §3.2 first. Minting `issue://` or `hc://` locally
-would fork the codec's grammar from the spec it implements.
+Resolving this means amending §3.2 first, then adding the scheme to
+`URI_SCHEMES` and its grammar to `SCHEME_CODECS` — the codec's per-scheme
+record is keyed by `UriScheme`, so the first half without the second is a type
+error. Minting `issue://` or `hc://` locally would fork the codec's grammar
+from the spec it implements.
 
-Filled by [#2](https://github.com/shaes-farm/dcc/issues/2) (canonical types);
-the URI codec lands with [#3](https://github.com/shaes-farm/dcc/issues/3).
+Filled by [#2](https://github.com/shaes-farm/dcc/issues/2) (canonical types)
+and [#3](https://github.com/shaes-farm/dcc/issues/3) (the URI codec).

@@ -15,8 +15,7 @@ import type { Uri } from "./uri";
  *
  * This is a spec gap, not an oversight here. Addressing them means adding
  * schemes to §3.2 first; minting `issue://` or `hc://` locally would fork the
- * codec's grammar (https://github.com/shaes-farm/dcc/issues/3) from the spec
- * it implements.
+ * codec's grammar in `uri.ts` from the spec it implements.
  */
 
 /** A source repo: application code, library, or infrastructure. */
