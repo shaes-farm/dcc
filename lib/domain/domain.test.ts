@@ -380,9 +380,17 @@ describe("the barrel", () => {
     const dir = import.meta.dirname;
     const barrel = readFileSync(join(dir, "index.ts"), "utf8");
 
+    // `.fixtures.ts` is excluded alongside `.test.ts`: fixtures are test
+    // material that happens to live beside the code it describes, and
+    // exporting them from the barrel would ship generators to the app.
     const modules = readdirSync(dir)
       .filter((file) => file.endsWith(".ts"))
-      .filter((file) => file !== "index.ts" && !file.endsWith(".test.ts"))
+      .filter(
+        (file) =>
+          file !== "index.ts" &&
+          !file.endsWith(".test.ts") &&
+          !file.endsWith(".fixtures.ts"),
+      )
       .map((file) => file.replace(/\.ts$/, ""));
 
     expect(modules.length).toBeGreaterThan(0);
