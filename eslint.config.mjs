@@ -42,9 +42,6 @@ const eslintConfig = defineConfig([
     // Vendored design-system export: reference material, not app source. It
     // ships its own React-less JSX conventions and would otherwise fail lint.
     "docs/design/**",
-    // Vendored mockup export: generated markup plus the design tool's own
-    // bundled runtime, neither of which is app source.
-    "docs/mockups/**",
   ]),
 ]);
 
