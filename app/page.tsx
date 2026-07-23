@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { JumpToUri } from "@/components/uri/jump-to-uri";
 
 export default function Home() {
   return (
@@ -8,14 +8,15 @@ export default function Home() {
           Developer Control Center
         </h1>
         <p className="max-w-md text-muted-foreground">
-          The application shell is up. Panels, the service rail, and the command
-          palette land on top of it.
+          Every object has a URI, and every URI opens something. Panels, the
+          service rail, and the command palette land on top of that.
         </p>
       </div>
+
+      {/* Stands in for the palette's "paste a URI to jump" (§5.4) until #14. */}
+      <JumpToUri />
+
       <p className="font-mono text-sm text-muted-foreground">127.0.0.1:7777</p>
-      <Button variant="outline" disabled>
-        No workspace configured
-      </Button>
     </main>
   );
 }
