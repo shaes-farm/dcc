@@ -25,6 +25,12 @@ export async function copyUri(uri: Uri): Promise<boolean> {
   field.style.position = "fixed";
   field.style.opacity = "0";
   document.body.append(field);
+
+  // Several browsers only copy a selection that sits inside the focused
+  // element, so selecting without focusing first fails quietly and reports
+  // success. `preventScroll` because the field is off-screen by design.
+  const previouslyFocused = document.activeElement;
+  field.focus({ preventScroll: true });
   field.select();
 
   try {
@@ -33,5 +39,11 @@ export async function copyUri(uri: Uri): Promise<boolean> {
     return false;
   } finally {
     field.remove();
+    // Copy link is invoked from a focused object (⌘-click, or the context menu
+    // opened with the Menu key), and §5.4 wants that keyboard flow unbroken —
+    // so focus goes back where it was rather than to the body.
+    if (previouslyFocused instanceof HTMLElement) {
+      previouslyFocused.focus({ preventScroll: true });
+    }
   }
 }
