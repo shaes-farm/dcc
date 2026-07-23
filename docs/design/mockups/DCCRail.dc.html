@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="../tokens/fonts.css">
+<link rel="stylesheet" href="../tokens/colors.css">
+<link rel="stylesheet" href="../tokens/typography.css">
+<link rel="stylesheet" href="../tokens/spacing.css">
+<link rel="stylesheet" href="../tokens/effects.css">
+<link rel="stylesheet" href="../styles.css">
+<script src="../_ds_bundle.js"></script>
+</helmet>
+<nav style="width:var(--rail-w);flex:0 0 auto;background:var(--bg-1);border-right:1px solid var(--border-1);display:flex;flex-direction:column;overflow:auto;height:100%;box-sizing:border-box">
+  <div style="display:flex;align-items:center;gap:8px;padding:12px;border-bottom:1px solid var(--border-1)">
+    <span style="font-family:var(--font-mono);font-weight:700;font-size:15px;letter-spacing:-.02em">DC<span style="color:var(--accent)">C</span></span>
+    <span style="font-size:var(--fs-sm);color:var(--text-2);flex:1">Acme Commerce</span>
+    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--status-failing);flex:0 0 auto"></span>
+  </div>
+  <div style="margin:10px;display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;background:var(--bg-3);border:1px solid var(--border-1);border-radius:var(--radius-1);color:var(--text-3);font-size:var(--fs-sm)">
+    <span>Jump to…</span><span style="flex:1"></span>
+    <kbd style="font-family:var(--font-mono);font-size:var(--fs-2xs);background:var(--bg-2);border:1px solid var(--border-2);border-radius:3px;padding:0 4px">⌘K</kbd>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;padding:5px 12px;font-size:var(--fs-base);color:{{ healthColor }};background:{{ healthBg }};border-left:2px solid {{ healthBorder }}">
+    <span style="width:8px;text-align:center;color:{{ healthGlyphColor }}">◉</span>Workspace Health
+  </div>
+  <div style="font-size:var(--fs-2xs);color:var(--text-3);text-transform:uppercase;letter-spacing:var(--tracking-overline);padding:12px 12px 5px;font-weight:500">Services</div>
+  <sc-for list="{{ services }}" as="svc" hint-placeholder-count="6">
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 12px;font-size:var(--fs-base);color:{{ svc.color }};background:{{ svc.bg }};border-left:2px solid {{ svc.border }}">
+      <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:{{ svc.dot }};flex:0 0 auto"></span>
+      <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ svc.name }}</span>
+    </div>
+  </sc-for>
+  <div style="font-size:var(--fs-2xs);color:var(--text-3);text-transform:uppercase;letter-spacing:var(--tracking-overline);padding:12px 12px 5px;font-weight:500">Lenses</div>
+  <sc-for list="{{ lenses }}" as="lens" hint-placeholder-count="8">
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 12px;color:var(--text-2)">
+      <span style="width:8px"></span><span style="font-size:var(--fs-sm)">{{ lens }}</span>
+    </div>
+  </sc-for>
+  <div style="flex:1"></div>
+  <div style="padding:10px 12px;border-top:1px solid var(--border-1);display:flex;gap:6px;flex-wrap:wrap">
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.Tag" accent="{{ true }}" hint-size="auto,18px">On-call</x-import>
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.Tag" hint-size="auto,18px">Debugging</x-import>
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.Tag" hint-size="auto,18px">Tech-lead</x-import>
+  </div>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:240,&quot;height&quot;:872},&quot;view&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;health&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const view = this.props.view || "health";
+    const active = "var(--accent-dim)";
+    const raw = [
+      { id: "storefront", name: "Storefront", dot: "var(--status-degraded)" },
+      { id: "checkout", name: "Checkout Service", dot: "var(--status-failing)" },
+      { id: "catalog", name: "Catalog", dot: "var(--status-healthy)" },
+      { id: "pricing", name: "Pricing", dot: "var(--status-healthy)" },
+      { id: "ui-kit", name: "UI Library", dot: "var(--status-degraded)" },
+      { id: "img-resizer", name: "Image Resizer", dot: "var(--status-healthy)" }
+    ];
+    const isHealth = view === "health";
+    return {
+      healthColor: isHealth ? "var(--text-1)" : "var(--text-2)",
+      healthBg: isHealth ? active : "transparent",
+      healthBorder: isHealth ? "var(--accent)" : "transparent",
+      healthGlyphColor: isHealth ? "var(--accent)" : "var(--text-3)",
+      lenses: ["Repos & PRs", "Workflow runs", "Security", "Environments", "Observability", "APIs", "Documents", "Audit log"],
+      services: raw.map(s => {
+        const on = view === s.id;
+        return { ...s, color: on ? "var(--text-1)" : "var(--text-2)", bg: on ? active : "transparent", border: on ? "var(--accent)" : "transparent" };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="../tokens/fonts.css">
+<link rel="stylesheet" href="../tokens/colors.css">
+<link rel="stylesheet" href="../tokens/typography.css">
+<link rel="stylesheet" href="../tokens/spacing.css">
+<link rel="stylesheet" href="../tokens/effects.css">
+<link rel="stylesheet" href="../styles.css">
+<script src="../_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#06080B;font-family:"IBM Plex Sans",system-ui,sans-serif}
+a{color:#34C6EC;text-decoration:none}a:hover{color:#5AD3F2;text-decoration:underline}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 8px}
+.dv-tid{font:600 10px "JetBrains Mono",monospace;padding:3px 7px;background:#34C6EC;color:#04222C;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 "IBM Plex Sans",sans-serif;color:#DEE5EE}
+.dv-intro{max-width:760px;font:400 12px/1.6 "IBM Plex Sans",sans-serif;color:#93A1B4;margin:0 0 24px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px "JetBrains Mono",monospace;padding:3px 7px;background:#1C2530;color:#DEE5EE;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 "IBM Plex Sans",sans-serif;color:#5D6C81}
+.dv-card{max-width:100%;background:#0A0D12;border:1px solid #2C3949;border-radius:8px;overflow:hidden}
+.dv-opt:target .dv-oid{background:#34C6EC;color:#04222C}
+.dv-next{margin:26px 0 0;font:12px/1.5 "IBM Plex Sans",sans-serif;color:#5D6C81}
+</style>
+</helmet>
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">DCC — four surfaces, one story: 02:14, checkout failing in qa</span></div>
+<p class="dv-intro">Assumptions: spec's Acme Commerce workspace and example services; scenario is the on-call triage of checkout after the 01:47 deploy of 3.7.12 (CrashLoopBackOff, NPE in PricingClient). All screens 1440×900, rail + status bar chrome from the kit. Sequence: notice the bad release (<a class="dv-oid" href="#1a">1a</a>), confirm root cause in logs (<a class="dv-oid" href="#1b">1b</a>), see blast radius in the graph (<a class="dv-oid" href="#1c">1c</a>); settings (<a class="dv-oid" href="#1d">1d</a>) shows onboarding + an actionable provider error.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Deploys &amp; rollback — release history with rollback confirmation</div>
+<div class="dv-card" style="width:1440px">
+<div data-screen-label="Deploys and rollback" style="position:relative;display:flex;flex-direction:column;width:1440px;height:900px;background:var(--bg-0);color:var(--text-1);font-family:var(--font-ui);font-size:var(--fs-base);line-height:var(--lh-normal)">
+<div style="display:flex;flex:1;min-height:0">
+<dc-import name="DCCRail" view="checkout" hint-size="240px,872px"></dc-import>
+<main style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;padding:16px;overflow:hidden">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:var(--fs-xl);font-weight:600">Checkout Service</span>
+    <span style="font-size:var(--fs-xl);font-weight:400;color:var(--text-3)">· Deploys</span>
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.StatusBadge" status="failing" hint-size="auto,18px">failing · qa</x-import>
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.UriChip" uri="deploy://qa/checkout" hint-size="auto,20px"></x-import>
+    <span style="flex:1"></span>
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.Button" variant="danger" size="sm" hint-size="auto,24px">⏪ Roll back qa to 3.7.11</x-import>
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.Button" size="sm" hint-size="auto,24px">Trigger deploy</x-import>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-1);border:1px solid var(--border-1);border-radius:var(--radius-2);font-family:var(--font-mono);font-size:var(--fs-sm);overflow:hidden">
+    <span style="font-size:var(--fs-2xs);color:var(--text-3);text-transform:uppercase;letter-spacing:var(--tracking-overline);font-family:var(--font-ui);flex:0 0 auto">Lineage</span>
+    <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-2);border:1px solid var(--border-1);border-radius:var(--radius-1);padding:4px 9px;white-space:nowrap">PR #483 <span style="color:var(--text-3)">merged 01:32 · @alice</span></span>
+    <span style="color:var(--text-3)">→</span>
+    <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-2);border:1px solid var(--border-1);border-radius:var(--radius-1);padding:4px 9px;white-space:nowrap">Build #1849 <span style="color:var(--status-healthy)">✓</span></span>
+    <span style="color:var(--text-3)">→</span>
+    <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-2);border:1px solid var(--border-1);border-radius:var(--radius-1);padding:4px 9px;white-space:nowrap">checkout:3.7.12 <span style="color:var(--text-3)">sha256:4bf9…</span></span>
+    <span style="color:var(--text-3)">→</span>
+    <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-2);border:1px solid var(--status-failing);border-radius:var(--radius-1);padding:4px 9px;white-space:nowrap">qa <span style="color:var(--status-failing)">⛔ 01:47</span></span>
+    <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-2);border:1px solid var(--border-1);border-radius:var(--radius-1);padding:4px 9px;white-space:nowrap">staging <span style="color:var(--text-3)">3.7.11</span></span>
+    <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-2);border:1px solid var(--border-1);border-radius:var(--radius-1);padding:4px 9px;white-space:nowrap">prod <span style="color:var(--text-3)">3.7.11</span></span>
+  </div>
+  <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:12px;flex:1;min-height:0;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <x-import component-from-global-scope="DCCDesignSystem_28b72e.Panel" title="Deploy history · qa" as-of="12s ago" pad="{{ no }}" hint-size="100%,300px">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr>
+            <th style="font-size:var(--fs-2xs);color:var(--text-3);text-transform:uppercase;letter-spacing:var(--tracking-overline);text-align:left;font-weight:500;padding:5px 10px;border-bottom:1px solid var(--border-1);background:var(--bg-2)">when</th>
+            <th style="font-size:var(--fs-2xs);color:var(--text-3);text-transform:uppercase;letter-spacing:var(--tracking-overline);text-align:left;font-weight:500;padding:5px 10px;border-bottom:1px solid var(--border-1);background:var(--bg-2)">commit</th>
+            <th style="font-size:var(--fs-2xs);color:var(--text-3);text-transform:uppercase;letter-spacing:var(--tracking-overline);text-align:left;font-weight:500;padding:5px 10px;border-bottom:1px solid var(--border-1);background:var(--bg-2)">image</th>
+            <th style="font-size:var(--fs-2xs);color:var(--text-3);text-transform:uppercase;letter-spacing:var(--tracking-overline);text-align:left;font-weight:500;padding:5px 10px;border-bottom:1px solid var(--border-1);background:var(--bg-2)">status</th>
+            <th style="font-size:var(--fs-2xs);color:var(--text-3);text-transform:uppercase;letter-spacing:var(--tracking-overline);text-align:left;font-weight:500;padding:5px 10px;border-bottom:1px solid var(--border-1);background:var(--bg-2)"></th>
+          </tr></thead>
+          <tbody>
+            <tr style="background:var(--status-failing-dim)">
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);font-family:var(--font-mono)">01:47 <span style="color:var(--text-3)">today</span></td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);font-family:var(--font-mono)"><a>a1b2c3d</a></td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);font-family:var(--font-mono)">checkout:3.7.12</td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm)"><span style="color:var(--status-failing);font-family:var(--font-mono)">⛔ failing</span> <span style="color:var(--text-3);font-size:var(--fs-xs)">current · first error 5m after rollout</span></td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm)"></td>
+            </tr>
+            <tr>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);font-family:var(--font-mono)">22:05 <span style="color:var(--text-3)">21 Jul</span></td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);font-family:var(--font-mono)"><a>9f8e7d6</a></td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);font-family:var(--font-mono)">checkout:3.7.11</td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm)"><span style="color:var(--status-healthy);font-family:var(--font-mono)">✓ healthy</span> <span style="color:var(--text-3);font-size:var(--fs-xs)">ran clean for 27h</span></td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm)"><a>Roll back to this</a></td>
+            </tr>
+            <tr>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);font-family:var(--font-mono)">14:32 <span style="color:var(--text-3)">21 Jul</span></td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);font-family:var(--font-mono)"><a>8c1d2e0</a></td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);font-family:var(--font-mono)">checkout:3.7.10</td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm)"><span style="color:var(--status-healthy);font-family:var(--font-mono)">✓ healthy</span></td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm)"><a>Roll back to this</a></td>
+            </tr>
+            <tr>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);font-family:var(--font-mono)">11:18 <span style="color:var(--text-3)">20 Jul</span></td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);font-family:var(--font-mono)"><a>f4a9b21</a></td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);font-family:var(--font-mono)">checkout:3.7.9</td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm)"><span style="color:var(--status-healthy);font-family:var(--font-mono)">✓ healthy</span></td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm)"><a>Roll back to this</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </x-import>
+      <x-import component-from-global-scope="DCCDesignSystem_28b72e.Panel" title="Environments" as-of="30s ago" pad="{{ no }}" hint-size="100%,130px">
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid var(--border-1);font-family:var(--font-mono);font-size:var(--fs-sm)">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--status-failing);flex:0 0 auto"></span><span style="width:64px">qa</span><span style="width:120px">checkout:3.7.12</span><span style="color:var(--text-3)">deployed 01:47 · a1b2c3d</span><span style="flex:1"></span><span style="color:var(--status-failing)">⛔ CrashLoopBackOff</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid var(--border-1);font-family:var(--font-mono);font-size:var(--fs-sm)">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--status-healthy);flex:0 0 auto"></span><span style="width:64px">staging</span><span style="width:120px">checkout:3.7.11</span><span style="color:var(--text-3)">deployed 21 Jul 22:31 · 9f8e7d6</span><span style="flex:1"></span><span style="color:var(--status-healthy)">✓</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;font-family:var(--font-mono);font-size:var(--fs-sm)">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--status-healthy);flex:0 0 auto"></span><span style="width:64px">prod</span><span style="width:120px">checkout:3.7.11</span><span style="color:var(--text-3)">deployed 20 Jul 16:02 · 9f8e7d6</span><span style="flex:1"></span><span style="color:var(--status-healthy)">✓</span>
+        </div>
+      </x-import>
+    </div>
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.Panel" title="Release · checkout:3.7.12" as-of="1m ago" pad="{{ no }}" hint-size="100%,300px">
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border-1)">
+        <span style="font-size:var(--fs-xs);color:var(--text-3);width:70px;flex:0 0 auto">Artifact</span>
+        <span style="font-family:var(--font-mono);font-size:var(--fs-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ghcr/acme/checkout@sha256:4bf9…</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border-1)">
+        <span style="font-size:var(--fs-xs);color:var(--text-3);width:70px;flex:0 0 auto">Build</span>
+        <span style="font-family:var(--font-mono);font-size:var(--fs-sm)">#1849 <span style="color:var(--status-healthy)">✓</span> <span style="color:var(--text-3)">01:39 · 4m 12s</span></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border-1)">
+        <span style="font-size:var(--fs-xs);color:var(--text-3);width:70px;flex:0 0 auto">Changes</span>
+        <span style="font-size:var(--fs-sm)"><a>#483</a> <span style="color:var(--text-2)">Retry budget for PricingClient</span> <span style="font-family:var(--font-mono);font-size:var(--fs-2xs);color:var(--text-3)">@alice</span></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border-1)">
+        <span style="font-size:var(--fs-xs);color:var(--text-3);width:70px;flex:0 0 auto">Signals</span>
+        <span style="font-size:var(--fs-sm);color:var(--status-failing);font-family:var(--font-mono)">⛔ first ERROR 01:52 — 5m after rollout</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px">
+        <span style="font-size:var(--fs-xs);color:var(--text-3);width:70px;flex:0 0 auto">Compare</span>
+        <span style="font-size:var(--fs-sm)"><a style="font-family:var(--font-mono)">9f8e7d6…a1b2c3d</a> <span style="color:var(--text-3)">1 PR · 4 commits · 12 files</span></span>
+      </div>
+      <div style="padding:8px 10px;border-top:1px solid var(--border-1);font-size:var(--fs-xs);color:var(--text-3)">The failing window starts at this release. Rolling back qa restores the last release that ran clean.</div>
+    </x-import>
+  </div>
+</main>
+</div>
+<x-import component-from-global-scope="DCCDesignSystem_28b72e.StatusBar" workspace="Acme Commerce" preset="On-call" polling="{{ yes }}" issues="{{ issues5 }}" clock="02:14" hint-size="100%,28px"></x-import>
+<sc-if value="{{ showRollbackDialog }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;inset:0;background:var(--scrim);display:flex;align-items:center;justify-content:center;z-index:5">
+  <div style="width:480px;background:var(--bg-1);border:1px solid var(--border-2);border-radius:var(--radius-3);box-shadow:var(--shadow-overlay);display:flex;flex-direction:column">
+    <div style="padding:14px 16px 0;font-size:var(--fs-lg);font-weight:600">Roll back workload</div>
+    <div style="padding:10px 16px 0;font-size:var(--fs-base);color:var(--text-2)">Sets <span style="font-family:var(--font-mono);color:var(--text-1)">workload://qa/checkout/deployment/checkout</span> to image <span style="font-family:var(--font-mono);color:var(--text-1)">checkout:3.7.11</span> (<span style="font-family:var(--font-mono)">9f8e7d6</span>).</div>
+    <div style="margin:12px 16px 0;padding:8px 10px;background:var(--bg-2);border:1px solid var(--border-1);border-radius:var(--radius-1);font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--text-2);display:flex;flex-direction:column;gap:4px">
+      <span>2 pods restart · rollout ~40s</span>
+      <span>checkout:3.7.12 stays available for redeploy</span>
+      <span style="color:var(--text-3)">recorded in audit log as you@acme.dev</span>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 16px 16px">
+      <x-import component-from-global-scope="DCCDesignSystem_28b72e.Button" variant="ghost" hint-size="auto,28px">Cancel</x-import>
+      <x-import component-from-global-scope="DCCDesignSystem_28b72e.Button" variant="danger" hint-size="auto,28px">⏪ Roll back qa</x-import>
+    </div>
+  </div>
+</div>
+</sc-if>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Logs &amp; observability — tail with metrics strip and expanded error</div>
+<div class="dv-card" style="width:1440px">
+<div data-screen-label="Logs and observability" style="display:flex;flex-direction:column;width:1440px;height:900px;background:var(--bg-0);color:var(--text-1);font-family:var(--font-ui);font-size:var(--fs-base);line-height:var(--lh-normal)">
+<div style="display:flex;flex:1;min-height:0">
+<dc-import name="DCCRail" view="checkout" hint-size="240px,872px"></dc-import>
+<main style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;padding:16px;overflow:hidden">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:var(--fs-xl);font-weight:600">Logs</span>
+    <span style="font-size:var(--fs-xl);font-weight:400;color:var(--text-3)">· checkout · qa</span>
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.UriChip" uri="logs://loki?service=checkout&amp;env=qa" hint-size="auto,20px"></x-import>
+    <span style="flex:1"></span>
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.Button" size="sm" hint-size="auto,24px">Open in Grafana</x-import>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.Select" options="{{ svcOptions }}" default-value="checkout" hint-size="130px,28px"></x-import>
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.Select" options="{{ envs }}" default-value="qa" hint-size="90px,28px"></x-import>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:var(--radius-1);background:var(--status-failing-dim);color:var(--status-failing);border:1px solid rgba(248,81,73,.3);font-family:var(--font-mono);font-size:var(--fs-xs);cursor:pointer">ERROR · 41</span>
+      <span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:var(--radius-1);background:var(--status-degraded-dim);color:var(--status-degraded);border:1px solid rgba(217,161,24,.3);font-family:var(--font-mono);font-size:var(--fs-xs);cursor:pointer">WARN · 87</span>
+      <span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:var(--radius-1);background:transparent;color:var(--text-3);border:1px solid var(--border-1);font-family:var(--font-mono);font-size:var(--fs-xs);cursor:pointer">INFO · 1.2k</span>
+    </div>
+    <div style="width:300px"><x-import component-from-global-scope="DCCDesignSystem_28b72e.Input" mono="{{ yes }}" default-value='route="POST /orders"' hint-size="300px,28px"></x-import></div>
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.Switch" label="Live tail" checked="{{ yes }}" hint-size="auto,20px"></x-import>
+    <span style="font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--text-3)">last 30m</span>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.Panel" title="Error rate" as-of="10s ago" hint-size="100%,120px">
+      <div style="display:flex;flex-direction:column;gap:6px;font-family:var(--font-mono);font-size:var(--fs-sm)">
+        <div><span style="color:var(--status-failing);font-size:var(--fs-2xl);font-weight:600">4.7%</span> <span style="color:var(--status-failing)">↑</span> <span style="color:var(--text-3)">was 0.2% before 01:47</span></div>
+        <svg width="100%" height="34" viewBox="0 0 320 34" preserveAspectRatio="none">
+          <polyline points="0,30 40,30 80,29 120,30 160,29 200,10 240,7 280,6 320,5" fill="none" stroke="var(--status-failing)" stroke-width="1.5"></polyline>
+          <line x1="185" y1="0" x2="185" y2="34" stroke="var(--status-deploying)" stroke-width="1" stroke-dasharray="3 3"></line>
+        </svg>
+        <span style="font-size:var(--fs-2xs);color:var(--status-deploying)">┆ deploy 01:47 · a1b2c3d</span>
+      </div>
+    </x-import>
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.Panel" title="Latency p95" as-of="10s ago" hint-size="100%,120px">
+      <div style="display:flex;flex-direction:column;gap:6px;font-family:var(--font-mono);font-size:var(--fs-sm)">
+        <div><span style="color:var(--status-degraded);font-size:var(--fs-2xl);font-weight:600">480ms</span> <span style="color:var(--text-3)">p50 88ms</span></div>
+        <svg width="100%" height="34" viewBox="0 0 320 34" preserveAspectRatio="none">
+          <polyline points="0,26 40,25 80,27 120,25 160,26 200,16 240,13 280,12 320,12" fill="none" stroke="var(--status-degraded)" stroke-width="1.5"></polyline>
+          <line x1="185" y1="0" x2="185" y2="34" stroke="var(--status-deploying)" stroke-width="1" stroke-dasharray="3 3"></line>
+        </svg>
+        <span style="font-size:var(--fs-2xs);color:var(--text-3)">POST /orders · qa</span>
+      </div>
+    </x-import>
+    <x-import component-from-global-scope="DCCDesignSystem_28b72e.Panel" title="Pod restarts" as-of="8s ago" hint-size="100%,120px">
+      <div style="display:flex;flex-direction:column;gap:6px;font-family:var(--font-mono);font-size:var(--fs-sm)">
+        <div><span style="color:var(--status-failing);font-size:var(--fs-2xl);font-weight:600">7</span> <span style="color:var(--text-3)">checkout-6df4cbf8b · since 01:52</span></div>
+        <svg width="100%" height="34" viewBox="0 0 320 34" preserveAspectRatio="none">
+          <polyline points="0,32 185,32 190,26 220,26 225,20 250,20 255,14 275,14 280,9 300,9 305,4 320,4" fill="none" stroke="var(--status-failing)" stroke-width="1.5"></polyline>
+          <line x1="185" y1="0" x2="185" y2="34" stroke="var(--status-deploying)" stroke-width="1" stroke-dasharray="3 3"></line>
+        </svg>
+        <span style="font-size:var(--fs-2xs);color:var(--text-3)">CrashLoopBackOff · backoff 5m</span>
+      </div>
+    </x-import>
+  </div>
+  <x-import component-from-global-scope="DCCDesignSystem_28b72e.Panel" title="Tail · pod://qa/checkout/checkout-6df4cbf8b" as-of="live" pad="{{ no }}" dc-props="{{ fill }}" style="flex:1 1 auto;min-height:0" hint-size="100%,400px">
+    <div style="padding:8px 12px;font-family:var(--font-mono);font-size:var(--fs-xs);line-height:var(--lh-log);color:var(--text-2)">
+      <div><span style="color:var(--text-3)">02:13:51.402</span> <span style="color:var(--text-2)">INFO </span> health probe ok in 12ms</div>
+      <div><span style="color:var(--text-3)">02:13:58.114</span> <span style="color:var(--status-failing)">ERROR</span> <span style="color:var(--syn-key)">"route"</span>: <span style="color:var(--syn-string)">"POST /orders"</span>, <span style="color:var(--syn-key)">"status"</span>: <span style="color:var(--syn-number)">500</span>, <span style="color:var(--syn-key)">"trace_id"</span>: <span style="color:var(--syn-string)">"4bf92f35"</span></div>
+      <div><span style="color:var(--text-3)">02:13:58.298</span> <span style="color:var(--status-degraded)">WARN </span> PricingClient retry 3/3 — NullPointerException in PricingClient.quote()</div>
+      <div><span style="color:var(--text-3)">02:13:59.001</span> <span style="color:var(--text-2)">INFO </span> <span style="color:var(--syn-key)">"p95_ms"</span>: <span style="color:var(--syn-number)">480</span>, <span style="color:var(--syn-key)">"error_rate"</span>: <span style="color:var(--syn-number)">0.047</span></div>
+      <div style="background:var(--status-failing-dim);margin:0 -12px;padding:0 12px;border-left:2px solid var(--status-failing)"><span style="color:var(--text-3)">02:13:59.512</span> <span style="color:var(--status-failing)">ERROR</span> <span style="color:var(--syn-key)">"route"</span>: <span style="color:var(--syn-string)">"POST /orders"</span>, <span style="color:var(--syn-key)">"status"</span>: <span style="color:var(--syn-number)">500</span>, <span style="color:var(--syn-key)">"trace_id"</span>: <span style="color:var(--syn-string)">"8ca01d22"</span> <span style="color:var(--text-3)">— selected</span></div>
+      <div style="background:var(--bg-2);border:1px solid var(--border-1);border-radius:var(--radius-1);margin:6px 0;padding:10px 12px;display:flex;gap:24px">
+        <pre style="margin:0;font-family:var(--font-mono);font-size:var(--fs-xs);line-height:var(--lh-log);color:var(--text-2)">{
+  <span style="color:var(--syn-key)">"route"</span>: <span style="color:var(--syn-string)">"POST /orders"</span>,
+  <span style="color:var(--syn-key)">"status"</span>: <span style="color:var(--syn-number)">500</span>,
+  <span style="color:var(--syn-key)">"error"</span>: <span style="color:var(--syn-string)">"NullPointerException"</span>,
+  <span style="color:var(--syn-key)">"at"</span>: <span style="color:var(--syn-string)">"PricingClient.quote(PricingClient.java:214)"</span>,
+  <span style="color:var(--syn-key)">"trace_id"</span>: <span style="color:var(--syn-string)">"8ca01d22"</span>,
+  <span style="color:var(--syn-key)">"pod"</span>: <span style="color:var(--syn-string)">"checkout-6df4cbf8b"</span>,
+  <span style="color:var(--syn-key)">"release"</span>: <span style="color:var(--syn-string)">"checkout:3.7.12"</span>
+}</pre>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;padding-top:2px">
+          <x-import component-from-global-scope="DCCDesignSystem_28b72e.Button" size="sm" hint-size="auto,24px">Open trace in Grafana</x-import>
+          <x-import component-from-global-scope="DCCDesignSystem_28b72e.Button" size="sm" hint-size="auto,24px">Copy as curl</x-import>
+          <x-import component-from-global-scope="DCCDesignSystem_28b72e.Button" size="sm" variant="ghost" hint-size="auto,24px">Open PricingClient.java:214</x-import>
+          <span style="font-size:var(--fs-2xs);color:var(--text-3);font-family:var(--font-mono)">42 similar errors share this stack</span>
+        </div>
+      </div>
+      <div><span style="color:var(--text-3)">02:14:02.090</span> <span style="color:var(--status-failing)">ERROR</span> <span style="color:var(--syn-key)">"route"</span>: <span style="color:var(--syn-string)">"POST /orders"</span>, <span style="color:var(--syn-key)">"status"</span>: <span style="color:var(--syn-number)">500</span>, <span style="color:var(--syn-key)">"trace_id"</span>: <span style="color:var(--syn-string)">"c31e88a0"</span></div>
+      <div><span style="color:var(--text-3)">02:14:04.517</span> <span style="color:var(--status-degraded)">WARN </span> liveness probe failed: HTTP 500 in 2140ms</div>
+      <div><span style="color:var(--text-3)">02:14:06.230</span> <span style="color:var(--status-degraded)">WARN </span> container checkout restarting (restarts: 7)</div>
+      <div><span style="color:var(--text-3)">02:14:09.881</span> <span style="color:var(--text-2)">INFO </span> starting checkout 3.7.12 · commit a1b2c3d</div>
+      <div><span style="color:var(--text-3)">02:14:11.006</span> <span style="color:var(--text-2)">INFO </span> connected to catalog in 84ms</div>
+      <div><span style="color:var(--text-3)">02:14:12.114</span> <span style="color:var(--status-failing)">ERROR</span> <span style="color:var(--syn-key)">"route"</span>: <span style="color:var(--syn-string)">"POST /orders"</span>, <span style="color:var(--syn-key)">"status"</span>: <span style="color:var(--syn-number)">500</span>, <span style="color:var(--syn-key)">"trace_id"</span>: <span style="color:var(--syn-string)">"e07bb219"</span></div>
+    </div>
+    <div style="position:sticky;bottom:0;display:flex;align-items:center;gap:8px;padding:5px 12px;background:var(--bg-2);border-top:1px solid var(--border-1);font-family:var(--font-mono);font-size:var(--fs-2xs);color:var(--text-3)"><span style="color:var(--status-healthy)">●</span> tailing · 214 lines in the last 5m · errors cluster on POST /orders</div>
+  </x-import>
+</main>
+</div>
+<x-import component-from-global-scope="DCCDesignSystem_28b72e.StatusBar" workspace="Acme Commerce" preset="On-call" polling="{{ yes }}" issues="{{ issues5 }}" clock="02:14" hint-size="100%,28px"></x-import>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Knowledge graph — checkout selected, context drawer with provenance</div>
+<div class="dv-card" style="width:1440px">
+<div data-screen-label="Knowledge graph" style="display:flex;flex-direction:column;width:1440px;height:900px;background:var(--bg-0);color:var(--text-1);font-family:var(--font-ui);font-size:var(--fs-base);line-height:var(--lh-normal)">
+<div style="display:flex;flex:1;min-height:0">
+<dc-import name="DCCRail" view="health" hint-size="240px,872px"></dc-import>
+<main style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;padding:16px;overflow:hidden">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:var(--fs-xl);font-weight:600">Knowledge graph</span>
+    <span style="font-size:var(--fs-xl);font-weight:400;color:var(--text-3)">· 18 nodes · 24 edges</span>
+    <span style="flex:1"></span>
+    <div style="display:flex;gap:6px;align-items:center;font-size:var(--fs-xs)">
+      <span style="color:var(--text-3);text-transform:uppercase;letter-spacing:var(--tracking-overline);font-size:var(--fs-2xs)">Provenance</span>
+      <x-import component-from-global-scope="DCCDesignSystem_28b72e.Tag" accent="{{ yes }}" hint-size="auto,18px">declared</x-import>
+      <x-import component-from-global-scope="DCCDesignSystem_28b72e.Tag" accent="{{ yes }}" hint-size="auto,18px">inferred</x-import>
+      <x-import component-from-global-scope="DCCDesignSystem_28b72e.Tag" accent="{{ yes }}" hint-size="auto,18px">telemetry</x-import>
+      <x-import component-from-global-scope="DCCDesignSystem_28b72e.Tag" hint-size="auto,18px">knowledge</x-import>
+    </div>
+    <div style="width:240px"><x-import component-from-global-scope="DCCDesignSystem_28b72e.Input" mono="{{ yes }}" default-value="service://checkout" hint-size="240px,28px"></x-import></div>
+  </div>
+  <div style="display:flex;gap:12px;flex:1;min-height:0">
+    <div style="position:relative;flex:1;min-width:0;background:var(--bg-0);border:1px solid var(--border-1);border-radius:var(--radius-2);overflow:hidden">
+      <svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 880 740" preserveAspectRatio="xMidYMid meet">
+        <line x1="160" y1="150" x2="430" y2="360" stroke="var(--border-2)" stroke-width="1.5"></line>
+        <line x1="430" y1="110" x2="160" y2="150" stroke="var(--border-2)" stroke-width="1.5" stroke-dasharray="4 3"></line>
+        <line x1="160" y1="360" x2="430" y2="360" stroke="var(--border-2)" stroke-width="1.5" stroke-dasharray="4 3"></line>
+        <line x1="160" y1="560" x2="430" y2="360" stroke="var(--border-2)" stroke-width="1.5" stroke-dasharray="4 3"></line>
+        <line x1="430" y1="590" x2="430" y2="360" stroke="var(--status-failing)" stroke-width="1.5"></line>
+        <line x1="700" y1="560" x2="430" y2="360" stroke="var(--border-2)" stroke-width="1.5"></line>
+        <line x1="700" y1="150" x2="430" y2="360" stroke="var(--border-2)" stroke-width="1.5" stroke-dasharray="4 3"></line>
+        <line x1="700" y1="360" x2="430" y2="360" stroke="var(--border-2)" stroke-width="1.5" stroke-dasharray="4 3"></line>
+        <text x="270" y="243" fill="var(--text-3)" font-family="JetBrains Mono, monospace" font-size="10">declared</text>
+        <text x="282" y="120" fill="var(--text-3)" font-family="JetBrains Mono, monospace" font-size="10">inferred</text>
+        <text x="270" y="352" fill="var(--text-3)" font-family="JetBrains Mono, monospace" font-size="10">inferred</text>
+        <text x="262" y="478" fill="var(--text-3)" font-family="JetBrains Mono, monospace" font-size="10">inferred</text>
+        <text x="438" y="490" fill="var(--status-failing)" font-family="JetBrains Mono, monospace" font-size="10">telemetry ⛔</text>
+        <text x="560" y="478" fill="var(--text-3)" font-family="JetBrains Mono, monospace" font-size="10">depends on</text>
+        <text x="560" y="243" fill="var(--text-3)" font-family="JetBrains Mono, monospace" font-size="10">inferred</text>
+        <text x="560" y="352" fill="var(--text-3)" font-family="JetBrains Mono, monospace" font-size="10">knowledge</text>
+      </svg>
+      <div style="position:absolute;left:40px;top:118px;width:220px;background:var(--bg-1);border:1px solid var(--border-1);border-radius:var(--radius-2);padding:8px 10px;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:7px;font-size:var(--fs-sm);font-weight:500"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--status-healthy)"></span>checkout-svc</div>
+        <span style="font-family:var(--font-mono);font-size:var(--fs-2xs);color:var(--text-3)">repo://github/acme/checkout-svc</span>
+      </div>
+      <div style="position:absolute;left:330px;top:80px;width:200px;background:var(--bg-1);border:1px solid var(--border-1);border-radius:var(--radius-2);padding:8px 10px;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:7px;font-size:var(--fs-sm);font-weight:500"><span style="color:var(--status-degraded)">⚠</span>CodeQL · 3 alerts</div>
+        <span style="font-family:var(--font-mono);font-size:var(--fs-2xs);color:var(--text-3)">alert://github/codeql</span>
+      </div>
+      <div style="position:absolute;left:40px;top:330px;width:220px;background:var(--bg-1);border:1px solid var(--border-1);border-radius:var(--radius-2);padding:8px 10px;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:7px;font-size:var(--fs-sm);font-weight:500"><span style="color:var(--text-3)">●</span>checkout:3.7.12</div>
+        <span style="font-family:var(--font-mono);font-size:var(--fs-2xs);color:var(--text-3)">artifact://ghcr/acme/checkout@4bf9…</span>
+      </div>
+      <div style="position:absolute;left:40px;top:530px;width:220px;background:var(--bg-1);border:1px solid var(--border-1);border-radius:var(--radius-2);padding:8px 10px;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:7px;font-size:var(--fs-sm);font-weight:500"><span style="color:var(--status-failing)">⛔</span>deploy qa · 01:47</div>
+        <span style="font-family:var(--font-mono);font-size:var(--fs-2xs);color:var(--text-3)">deploy://qa/checkout</span>
+      </div>
+      <div style="position:absolute;left:320px;top:326px;width:220px;background:var(--bg-1);border:1px solid var(--accent);border-radius:var(--radius-2);padding:9px 11px;display:flex;flex-direction:column;gap:3px;box-shadow:var(--focus-ring)">
+        <div style="display:flex;align-items:center;gap:7px;font-size:var(--fs-base);font-weight:600"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--status-failing)"></span>Checkout Service</div>
+        <span style="font-family:var(--font-mono);font-size:var(--fs-2xs);color:var(--text-3)">service://checkout</span>
+        <span style="font-family:var(--font-mono);font-size:var(--fs-2xs);color:var(--status-failing)">⛔ failing · qa · since 01:52</span>
+      </div>
+      <div style="position:absolute;left:330px;top:560px;width:210px;background:var(--bg-1);border:1px solid rgba(248,81,73,.4);border-radius:var(--radius-2);padding:8px 10px;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:7px;font-size:var(--fs-sm);font-weight:500"><span style="color:var(--status-failing)">⛔</span>checkout-6df4cbf8b</div>
+        <span style="font-family:var(--font-mono);font-size:var(--fs-2xs);color:var(--text-3)">pod://qa/checkout · restarts: 7</span>
+      </div>
+      <div style="position:absolute;left:600px;top:530px;width:200px;background:var(--bg-1);border:1px solid var(--border-1);border-radius:var(--radius-2);padding:8px 10px;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:7px;font-size:var(--fs-sm);font-weight:500"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--status-healthy)"></span>Catalog</div>
+        <span style="font-family:var(--font-mono);font-size:var(--fs-2xs);color:var(--text-3)">service://catalog</span>
+      </div>
+      <div style="position:absolute;left:600px;top:118px;width:210px;background:var(--bg-1);border:1px solid var(--border-1);border-radius:var(--radius-2);padding:8px 10px;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:7px;font-size:var(--fs-sm);font-weight:500"><span style="color:var(--text-3)">●</span>Errors &amp; p95</div>
+        <span style="font-family:var(--font-mono);font-size:var(--fs-2xs);color:var(--text-3)">dashboard://grafana/uid-errors</span>
+      </div>
+      <div style="position:absolute;left:600px;top:330px;width:220px;background:var(--bg-1);border:1px solid var(--border-1);border-radius:var(--radius-2);padding:8px 10px;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:7px;font-size:var(--fs-sm);font-weight:500"><span style="color:var(--text-3)">●</span>Runbook: checkout on-call</div>
+        <span style="font-family:var(--font-mono);font-size:var(--fs-2xs);color:var(--text-3)">doc://repo-md/checkout-svc/docs</span>
+      </div>
+      <div style="position:absolute;left:12px;bottom:10px;font-family:var(--font-mono);font-size:var(--fs-2xs);color:var(--text-3)">solid = declared/telemetry · dashed = inferred · ⏎ open node · G re-center</div>
+    </div>
+    <div style="width:320px;flex:0 0 auto;display:flex;flex-direction:column;gap:12px">
+      <x-import component-from-global-scope="DCCDesignSystem_28b72e.Panel" title="Context · service://checkout" as-of="20s ago" pad="{{ no }}" hint-size="320px,320px">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--border-1)"><span style="font-size:var(--fs-xs);color:var(--text-3);width:78px;flex:0 0 auto">Repository</span><a style="font-size:var(--fs-sm);color:var(--text-1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">checkout-svc (CI ✓, 3 PRs)</a><x-import component-from-global-scope="DCCDesignSystem_28b72e.Tag" hint-size="auto,18px">declared</x-import></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--border-1)"><span style="font-size:var(--fs-xs);color:var(--text-3);width:78px;flex:0 0 auto">Deployments</span><a style="font-size:var(--fs-sm);color:var(--text-1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">qa (01:47, a1b2c3d) · staging</a><x-import component-from-global-scope="DCCDesignSystem_28b72e.Tag" hint-size="auto,18px">inferred</x-import></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--border-1)"><span style="font-size:var(--fs-xs);color:var(--text-3);width:78px;flex:0 0 auto">Artifact</span><a style="font-size:var(--fs-sm);color:var(--text-1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">checkout:3.7.12 · Build #1849</a><x-import component-from-global-scope="DCCDesignSystem_28b72e.Tag" hint-size="auto,18px">inferred</x-import></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--border-1)"><span style="font-size:var(--fs-xs);color:var(--text-3);width:78px;flex:0 0 auto">Security</span><a style="font-size:var(--fs-sm);color:var(--text-1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">3 CodeQL alerts</a><x-import component-from-global-scope="DCCDesignSystem_28b72e.Tag" hint-size="auto,18px">inferred</x-import></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--border-1)"><span style="font-size:var(--fs-xs);color:var(--text-3);width:78px;flex:0 0 auto">Documents</span><a style="font-size:var(--fs-sm);color:var(--text-1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">ADR-0017 · Runbook: on-call</a><x-import component-from-global-scope="DCCDesignSystem_28b72e.Tag" hint-size="auto,18px">knowledge</x-import></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--border-1)"><span style="font-size:var(--fs-xs);color:var(--text-3);width:78px;flex:0 0 auto">Owners</span><a style="font-size:var(--fs-sm);color:var(--text-1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">@payments-team (CODEOWNERS)</a><x-import component-from-global-scope="DCCDesignSystem_28b72e.Tag" hint-size="auto,18px">knowledge</x-import></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 10px"><span style="font-size:var(--fs-xs);color:var(--text-3);width:78px;flex:0 0 auto">Depends on</span><a style="font-size:var(--fs-sm);color:var(--text-1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">catalog</a><x-import component-from-global-scope="DCCDesignSystem_28b72e.Tag" hint-size="auto,18px">telemetry</x-import></div>
+      </x-import>
+      <x-import component-from-global-scope="DCCDesignSystem_28b72e.Panel" title="Actions" pad="{{ no }}" hint-size="320px,140px">
+        <div style="display:flex;flex-direction:column">
+          <a style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);color:var(--text-1);cursor:pointer"><span style="color:var(--accent)">⚡</span>Restart workload checkout @ qa</a>
+          <a style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);color:var(--text-1);cursor:pointer"><span style="color:var(--accent)">⏪</span>Roll back qa to 3.7.11</a>
+          <a style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border-1);font-size:var(--fs-sm);color:var(--text-1);cursor:pointer"><span style="color:var(--accent)">→</span>Open service cockpit</a>
+          <a style="display:flex;align-items:center;gap:8px;padding:7px 10px;font-size:var(--fs-sm);color:var(--text-1);cursor:pointer"><span style="color:var(--accent)">→</span>Open runbook</a>
+        </div>
+      </x-import>
+    </div>
+  </div>
+</main>
+</div>
+<x-import component-from-global-scope="DCCDesignSystem_28b72e.StatusBar" workspace="Acme Commerce" preset="On-call" polling="{{ yes }}" issues="{{ issues5 }}" clock="02:14" hint-size="100%,28px"></x-import>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="1d">
+<div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Settings — providers with actionable error, add-service onboarding</div>
+<div class="dv-card" style="width:1440px">
+<div data-screen-label="Settings and onboarding" style="display:flex;flex-direction:column;width:1440px;height:900px;background:var(--bg-0);color:var(--text-1);font-family:var(--font-ui);font-size:var(--fs-base);line-height:var(--lh-normal)">
+<div style="display:flex;flex:1;min-height:0">
+<dc-import name="DCCRail" view="settings" hint-size="240px,872px"></dc-import>
+<main style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;padding:16px;overflow:hidden">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:var(--fs-xl);font-weight:600">Settings</span>
+    <span style="flex:1"></span>
+    <span style="font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--text-3)">config: ~/.dcc/workspace.yaml</span>
+  </div>
+  <div style="display:flex;gap:12px;flex:1;min-height:0">
+    <div style="width:180px;flex:0 0 auto;display:flex;flex-direction:column;background:var(--bg-1);border:1px solid var(--border-1);border-radius:var(--radius-2);overflow:hidden;align-self:flex-start">
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:var(--fs-base);color:var(--text-1);background:var(--accent-dim);border-left:2px solid var(--accent);cursor:pointer">Providers</div>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:var(--fs-base);color:var(--text-2);border-left:2px solid transparent;cursor:pointer">Services</div>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:var(--fs-base);color:var(--text-2);border-left:2px solid transparent;cursor:pointer">Layout presets</div>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:var(--fs-base);color:var(--text-2);border-left:2px solid transparent;cursor:pointer">Keybindings</div>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:var(--fs-base);color:var(--text-2);border-left:2px solid transparent;cursor:pointer">Audit log</div>
+    </div>
+    <div style="flex:1;min-width:0;max-width:820px;display:flex;flex-direction:column;gap:12px;overflow:auto">
+      <x-import component-from-global-scope="DCCDesignSystem_28b72e.Panel" title="Providers" as-of="45s ago" pad="{{ no }}" hint-size="100%,300px">
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border-1)">
+          <span style="color:var(--status-healthy);font-family:var(--font-mono)">✓</span>
+          <span style="font-size:var(--fs-base);font-weight:500;width:110px">GitHub</span>
+          <span style="font-size:var(--fs-sm);color:var(--text-2);flex:1">connected as <span style="font-family:var(--font-mono)">acme-bot</span> · 6 repos · rate limit 4.2k/5k</span>
+          <x-import component-from-global-scope="DCCDesignSystem_28b72e.Button" size="sm" variant="ghost" hint-size="auto,24px">Configure</x-import>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border-1)">
+          <span style="color:var(--status-healthy);font-family:var(--font-mono)">✓</span>
+          <span style="font-size:var(--fs-base);font-weight:500;width:110px">Kubernetes</span>
+          <span style="font-size:var(--fs-sm);color:var(--text-2);flex:1">contexts: <span style="font-family:var(--font-mono)">qa</span>, <span style="font-family:var(--font-mono)">prod-us-east</span> · 147 pods · 98% healthy</span>
+          <x-import component-from-global-scope="DCCDesignSystem_28b72e.Button" size="sm" variant="ghost" hint-size="auto,24px">Configure</x-import>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:9px 12px;border-bottom:1px solid var(--border-1)">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--status-failing);font-family:var(--font-mono)">⛔</span>
+            <span style="font-size:var(--fs-base);font-weight:500;width:110px">Grafana</span>
+            <span style="font-size:var(--fs-sm);color:var(--text-2);flex:1"><span style="font-family:var(--font-mono)">https://grafana.acme.dev</span></span>
+            <x-import component-from-global-scope="DCCDesignSystem_28b72e.Button" size="sm" hint-size="auto,24px">Retry</x-import>
+          </div>
+          <x-import component-from-global-scope="DCCDesignSystem_28b72e.ErrorCard" title="401 from Grafana" detail="Unauthorized — check GRAFANA_TOKEN in your shell, then retry. Metrics panels show stale data until this is fixed." hint-size="100%,70px"></x-import>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px">
+          <span style="color:var(--status-healthy);font-family:var(--font-mono)">✓</span>
+          <span style="font-size:var(--fs-base);font-weight:500;width:110px">Loki</span>
+          <span style="font-size:var(--fs-sm);color:var(--text-2);flex:1"><span style="font-family:var(--font-mono)">logs://loki</span> · streaming · 2.1 MB/min</span>
+          <x-import component-from-global-scope="DCCDesignSystem_28b72e.Button" size="sm" variant="ghost" hint-size="auto,24px">Configure</x-import>
+        </div>
+      </x-import>
+      <x-import component-from-global-scope="DCCDesignSystem_28b72e.Panel" title="Add service" hint-size="100%,340px">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:grid;grid-template-columns:150px 1fr;gap:10px 12px;align-items:center">
+            <span style="font-size:var(--fs-sm);color:var(--text-2)">Name</span>
+            <div style="width:300px"><x-import component-from-global-scope="DCCDesignSystem_28b72e.Input" default-value="Notifications" hint-size="300px,28px"></x-import></div>
+            <span style="font-size:var(--fs-sm);color:var(--text-2)">Repository</span>
+            <div style="width:420px"><x-import component-from-global-scope="DCCDesignSystem_28b72e.Input" mono="{{ yes }}" default-value="github.com/acme/notifications-svc" hint-size="420px,28px"></x-import></div>
+            <span style="font-size:var(--fs-sm);color:var(--text-2)">Workload URI</span>
+            <div style="width:420px"><x-import component-from-global-scope="DCCDesignSystem_28b72e.Input" mono="{{ yes }}" placeholder="workload://qa/notifications/deployment/notifications" hint-size="420px,28px"></x-import></div>
+            <span style="font-size:var(--fs-sm);color:var(--text-2)">Owners</span>
+            <div style="width:300px"><x-import component-from-global-scope="DCCDesignSystem_28b72e.Input" mono="{{ yes }}" default-value="@platform-team" hint-size="300px,28px"></x-import></div>
+            <span style="font-size:var(--fs-sm);color:var(--text-2)">Environments</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <x-import component-from-global-scope="DCCDesignSystem_28b72e.Checkbox" label="qa" checked="{{ yes }}" hint-size="auto,20px"></x-import>
+              <x-import component-from-global-scope="DCCDesignSystem_28b72e.Checkbox" label="staging" checked="{{ yes }}" hint-size="auto,20px"></x-import>
+              <x-import component-from-global-scope="DCCDesignSystem_28b72e.Checkbox" label="prod" hint-size="auto,20px"></x-import>
+            </div>
+            <span style="font-size:var(--fs-sm);color:var(--text-2)">Security alerts</span>
+            <x-import component-from-global-scope="DCCDesignSystem_28b72e.Switch" label="Track CodeQL and Dependabot" checked="{{ yes }}" hint-size="auto,20px"></x-import>
+          </div>
+          <div style="font-size:var(--fs-xs);color:var(--text-3)">Only name and repository are required. DCC infers deployments, artifacts, dashboards and docs from the repo and cluster — provenance is shown on every inferred edge.</div>
+          <div style="display:flex;gap:8px">
+            <x-import component-from-global-scope="DCCDesignSystem_28b72e.Button" variant="primary" hint-size="auto,28px">Add service</x-import>
+            <x-import component-from-global-scope="DCCDesignSystem_28b72e.Button" variant="ghost" hint-size="auto,28px">Cancel</x-import>
+          </div>
+        </div>
+      </x-import>
+    </div>
+  </div>
+</main>
+</div>
+<x-import component-from-global-scope="DCCDesignSystem_28b72e.StatusBar" workspace="Acme Commerce" preset="On-call" polling="{{ yes }}" issues="{{ issues5 }}" clock="02:14" hint-size="100%,28px"></x-import>
+</div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Try next: "make <a class="dv-oid" href="#1a">1a</a> show the dialog closed" · "add a pod drawer over <a class="dv-oid" href="#1b">1b</a>" · "clickable prototype linking all four"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showRollbackDialog&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Deploys screen (1a)&quot;},&quot;statusbarIssues&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5,&quot;min&quot;:0,&quot;max&quot;:99,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Chrome&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      yes: true,
+      no: false,
+      issues5: this.props.statusbarIssues ?? 5,
+      envs: ["qa", "staging", "prod"],
+      svcOptions: ["checkout", "storefront", "catalog", "pricing", "image-resizer"],
+      fill: { style: { height: "100%" } },
+      showRollbackDialog: this.props.showRollbackDialog ?? true
+    };
+  }
+}
+</script>
+</body>
+</html>

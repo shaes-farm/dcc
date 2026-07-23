@@ -10,6 +10,7 @@
     "dev": "node ./bin/dcc.mjs dev",
     "build": "node ./bin/dcc.mjs build",
     "start": "node ./bin/dcc.mjs start",
+    "mockups": "cd docs/design && python3  -m http.server 8080",
     "lint": "eslint",
     "check-types": "tsc --noEmit",
     "format": "prettier --write .",
