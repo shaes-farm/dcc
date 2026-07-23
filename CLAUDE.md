@@ -30,7 +30,13 @@ CI (`.github/workflows/ci.yml`) runs lint → format:check → check-types → t
 
 `docs/ARCHITECTURE.md` is the product and technical specification, frozen at v0.4, and it is the north star for every decision here. Work is issue-driven and each issue names its section — `gh issue view 2` opens with `**Spec:** §3.1`. **Read the cited section before implementing.** Section numbers are the shared vocabulary in code comments, commit messages, and PR bodies.
 
-When the spec and an implementation convenience disagree, the spec wins, or the spec gets amended first. Concretely: §3.1 lists 23 canonical objects but §3.2 defines URI schemes for only 18, so `Issue`, `Release`, `Dependency`, `Provider`, and `HealthCheck` carry no `uri` rather than have local schemes invented for them. Widening the model to fit a provider is the failure mode this codebase is organized to prevent.
+When the spec and an implementation convenience disagree, the spec wins, or an ADR supersedes it first (see below). Concretely: §3.1 lists 23 canonical objects but §3.2 defines URI schemes for only 18, so `Issue`, `Release`, `Dependency`, `Provider`, and `HealthCheck` carry no `uri` rather than have local schemes invented for them. Widening the model to fit a provider is the failure mode this codebase is organized to prevent.
+
+### Architecture decisions go in `docs/adr/`
+
+`docs/ARCHITECTURE.md` is frozen and **is not edited**. When a decision extends the spec, corrects it, or picks between options it left open, record it as an ADR instead: copy `docs/adr/adr-0000.md` to the next number, add a row to `docs/adr/index.md`, and cite the ADR number alongside the § number in code comments, commit messages, and PR bodies. `docs/adr/index.md` is the list of everything true of the architecture that the frozen spec does not say.
+
+This is for decisions, not implementation choices — those belong in the code and its comments. ADR-0001 is the shape of the bar: §3.2 defines `trace://` URIs while §5.3's panel library named no panel to resolve them to, so the resolver had a scheme with nowhere to go.
 
 ## Architecture
 
