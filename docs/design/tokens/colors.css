@@ -1,0 +1,46 @@
+:root {
+  /* Background ladder — near-black, never pure #000. Depth = step up + hairline. */
+  --bg-0: #0a0d12; /* app canvas */
+  --bg-1: #0f141b; /* panels, rail */
+  --bg-2: #151c25; /* raised rows, table headers, hover on bg-1 */
+  --bg-3: #1c2530; /* inputs, hover on bg-2, active rows */
+  /* Borders */
+  --border-1: #1e2733;
+  --border-2: #2c3949;
+  /* Text */
+  --text-1: #dee5ee; /* primary */
+  --text-2: #93a1b4; /* secondary */
+  --text-3: #5d6c81; /* muted, timestamps, placeholders */
+  /* The one accent (interactive, focus, selection, links) */
+  --accent: #34c6ec;
+  --accent-hover: #5ad3f2;
+  --accent-press: #22a9cc;
+  --accent-fg: #04222c; /* text on accent fill */
+  --accent-dim: rgba(52, 198, 236, 0.14);
+  /* Status vocabulary: healthy | degraded | failing | deploying | unknown */
+  --status-healthy: #3fb950;
+  --status-degraded: #d9a118;
+  --status-failing: #f85149;
+  --status-deploying: #5b7fff;
+  --status-unknown: #7d8896;
+  --status-healthy-dim: rgba(63, 185, 80, 0.14);
+  --status-degraded-dim: rgba(217, 161, 24, 0.14);
+  --status-failing-dim: rgba(248, 81, 73, 0.14);
+  --status-deploying-dim: rgba(91, 127, 255, 0.14);
+  --status-unknown-dim: rgba(125, 136, 150, 0.14);
+  /* Restrained syntax palette for logs/JSON */
+  --syn-key: #7eb6e8;
+  --syn-string: #9ece8c;
+  --syn-number: #d2a8ff;
+  --syn-comment: #5d6c81;
+  /* Semantic aliases */
+  --surface-app: var(--bg-0);
+  --surface-panel: var(--bg-1);
+  --surface-raised: var(--bg-2);
+  --surface-input: var(--bg-3);
+  --text-body: var(--text-1);
+  --text-label: var(--text-2);
+  --text-faint: var(--text-3);
+  --link: var(--accent);
+  --scrim: rgba(4, 7, 10, 0.6);
+}

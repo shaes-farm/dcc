@@ -1,0 +1,59 @@
+<!-- @dsCard group="Type" viewport="700x150" name="Rollup numbers" subtitle="Big mono figures lead; the fact follows in grotesque" -->
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        background: var(--bg-1);
+        padding: 16px;
+        display: flex;
+        gap: 28px;
+        align-items: center;
+      }
+      .s {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .n {
+        font-family: var(--font-mono);
+        font-size: var(--fs-2xl);
+        font-weight: 600;
+        color: var(--text-1);
+        line-height: var(--lh-tight);
+      }
+      .f {
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="s">
+      <span class="n">18</span
+      ><span class="f"
+        >services ·
+        <span style="color: var(--status-failing)">3 unhealthy</span></span
+      >
+    </div>
+    <div class="s">
+      <span class="n">147</span><span class="f">pods · 98% healthy</span>
+    </div>
+    <div class="s">
+      <span class="n">11</span
+      ><span class="f"
+        >security alerts ·
+        <span style="color: var(--status-failing)">2 critical</span></span
+      >
+    </div>
+    <div class="s">
+      <span class="n" style="color: var(--status-deploying)">2</span
+      ><span class="f">deploys running</span>
+    </div>
+    <div class="s">
+      <span class="n" style="color: var(--status-healthy)">6/6</span
+      ><span class="f">health checks passing</span>
+    </div>
+  </body>
+</html>

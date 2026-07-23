@@ -1,0 +1,81 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="The one accent" subtitle="Cyan for everything interactive — links, focus, selection, the primary button" -->
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        background: var(--bg-0);
+        padding: 16px;
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+      .sw {
+        width: 90px;
+        height: 90px;
+        border-radius: var(--radius-2);
+        display: flex;
+        align-items: flex-end;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      .v {
+        font-family: var(--font-mono);
+        font-size: var(--fs-2xs);
+      }
+      .demo {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        font-size: var(--fs-base);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sw" style="background: var(--accent)">
+      <span class="v" style="color: var(--accent-fg)">#34C6EC</span>
+    </div>
+    <div
+      class="sw"
+      style="
+        background: var(--accent-dim);
+        border: 1px solid rgba(52, 198, 236, 0.3);
+      "
+    >
+      <span class="v" style="color: var(--accent)">--accent-dim</span>
+    </div>
+    <div class="demo">
+      <a href="#">service://checkout — links use accent</a>
+      <span
+        style="
+          display: inline-flex;
+          align-items: center;
+          height: 28px;
+          padding: 0 12px;
+          border-radius: 4px;
+          background: var(--accent);
+          color: var(--accent-fg);
+          font-weight: 500;
+          width: fit-content;
+        "
+        >Restart workload</span
+      >
+      <span
+        style="
+          display: inline-flex;
+          align-items: center;
+          height: 28px;
+          padding: 0 10px;
+          border-radius: 4px;
+          background: var(--surface-input);
+          border: 1px solid var(--accent);
+          box-shadow: var(--focus-ring);
+          color: var(--text-3);
+          width: 180px;
+        "
+        >focus ring</span
+      >
+    </div>
+  </body>
+</html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 1280px;
+        height: 854px;
+        overflow: hidden;
+      }
+      .wrap {
+        display: flex;
+        width: 1280px;
+        height: 854px;
+      }
+      .main {
+        flex: 1;
+        background: var(--bg-0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .mark {
+        font-family: var(--font-mono);
+        font-weight: 700;
+        font-size: 340px;
+        color: var(--text-1);
+        letter-spacing: -0.04em;
+      }
+      .mark span {
+        color: var(--accent);
+      }
+      .strip {
+        width: 220px;
+        height: 854px;
+        display: flex;
+        flex-direction: column;
+      }
+      .strip div {
+        flex: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="main">
+        <div class="mark">DC<span>C</span></div>
+      </div>
+      <div class="strip">
+        <div style="background: #d9a118"></div>
+        <div style="background: #3fb950"></div>
+        <div style="background: #34c6ec"></div>
+        <div style="background: #5b7fff"></div>
+      </div>
+    </div>
+  </body>
+</html>

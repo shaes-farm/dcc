@@ -1,0 +1,74 @@
+<!-- @dsCard group="Type" viewport="700x190" name="UI grotesque — IBM Plex Sans" subtitle="Chrome, labels, body. Base 13px, dense but calm" -->
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        background: var(--bg-1);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .r {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+      }
+      .v {
+        font-family: var(--font-mono);
+        font-size: var(--fs-2xs);
+        color: var(--text-3);
+        width: 150px;
+        flex: 0 0 auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="r">
+      <span class="v">--fs-xl 20 / 600</span
+      ><span style="font-size: var(--fs-xl); font-weight: 600"
+        >Acme Commerce</span
+      >
+    </div>
+    <div class="r">
+      <span class="v">--fs-lg 16 / 600</span
+      ><span style="font-size: var(--fs-lg); font-weight: 600"
+        >Restart workload checkout @ qa?</span
+      >
+    </div>
+    <div class="r">
+      <span class="v">--fs-md 14 / 600</span
+      ><span style="font-size: var(--fs-md); font-weight: 600"
+        >Health & Metrics</span
+      >
+    </div>
+    <div class="r">
+      <span class="v">--fs-base 13 / 400</span
+      ><span
+        >Every number and row is a drill-down. Stale data remains visible with
+        its timestamp.</span
+      >
+    </div>
+    <div class="r">
+      <span class="v">--fs-sm 12 / 400</span
+      ><span style="font-size: var(--fs-sm); color: var(--text-2)"
+        >Secondary meta — merged 2h ago by @alice</span
+      >
+    </div>
+    <div class="r">
+      <span class="v">--fs-xs 11 / 500</span
+      ><span
+        style="
+          font-size: var(--fs-xs);
+          color: var(--text-2);
+          text-transform: uppercase;
+          letter-spacing: var(--tracking-overline);
+          font-weight: 500;
+        "
+        >Attention needed</span
+      >
+    </div>
+  </body>
+</html>

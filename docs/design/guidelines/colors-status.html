@@ -1,0 +1,108 @@
+<!-- @dsCard group="Colors" viewport="700x170" name="Status vocabulary" subtitle="The only saturated colors on screen — always paired with a glyph, never color alone" -->
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        background: var(--bg-0);
+        padding: 14px;
+        display: flex;
+        gap: 10px;
+      }
+      .s {
+        flex: 1;
+        border-radius: var(--radius-2);
+        border: 1px solid var(--border-1);
+        background: var(--bg-1);
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-start;
+      }
+      .g {
+        font-size: 18px;
+        line-height: 1;
+      }
+      .n {
+        font-size: var(--fs-sm);
+        color: var(--text-1);
+        font-weight: 600;
+      }
+      .v {
+        font-family: var(--font-mono);
+        font-size: var(--fs-2xs);
+        color: var(--text-3);
+      }
+      .chip {
+        border-radius: 999px;
+        padding: 3px 8px;
+        font-family: var(--font-mono);
+        font-size: var(--fs-2xs);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="s">
+      <span class="g" style="color: var(--status-healthy)">✓</span
+      ><span class="n">healthy</span
+      ><span
+        class="chip"
+        style="
+          background: var(--status-healthy-dim);
+          color: var(--status-healthy);
+        "
+        >#3FB950</span
+      ><span class="v">running, passing</span>
+    </div>
+    <div class="s">
+      <span class="g" style="color: var(--status-degraded)">⚠</span
+      ><span class="n">degraded</span
+      ><span
+        class="chip"
+        style="
+          background: var(--status-degraded-dim);
+          color: var(--status-degraded);
+        "
+        >#D9A118</span
+      ><span class="v">latency ↑, warnings</span>
+    </div>
+    <div class="s">
+      <span class="g" style="color: var(--status-failing)">⛔</span
+      ><span class="n">failing</span
+      ><span
+        class="chip"
+        style="
+          background: var(--status-failing-dim);
+          color: var(--status-failing);
+        "
+        >#F85149</span
+      ><span class="v">CrashLoopBackOff</span>
+    </div>
+    <div class="s">
+      <span class="g" style="color: var(--status-deploying)">⏳</span
+      ><span class="n">deploying</span
+      ><span
+        class="chip"
+        style="
+          background: var(--status-deploying-dim);
+          color: var(--status-deploying);
+        "
+        >#5B7FFF</span
+      ><span class="v">rollout, BUILDING</span>
+    </div>
+    <div class="s">
+      <span class="g" style="color: var(--status-unknown)">○</span
+      ><span class="n">unknown</span
+      ><span
+        class="chip"
+        style="
+          background: var(--status-unknown-dim);
+          color: var(--status-unknown);
+        "
+        >#7D8896</span
+      ><span class="v">never guess healthy</span>
+    </div>
+  </body>
+</html>
