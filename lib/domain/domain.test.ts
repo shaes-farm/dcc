@@ -17,7 +17,7 @@ import {
   STATUSES,
   URI_SCHEMES,
   WORKLOAD_KINDS,
-  unsafeUri,
+  toUri,
   type Action,
   type Api,
   type Artifact,
@@ -43,7 +43,12 @@ import {
   type Workspace,
 } from ".";
 
-const uri = unsafeUri;
+/**
+ * Every fixture URI below goes through the codec, so a URI that does not match
+ * the grammar §3.2 defines fails the suite here rather than at the first panel
+ * that tries to resolve it.
+ */
+const uri = toUri;
 
 /**
  * One fixture per canonical object in §3.1.
