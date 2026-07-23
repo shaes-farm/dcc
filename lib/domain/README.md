@@ -48,7 +48,9 @@ Knowledge → Planning → Source → Build → Artifact → Deploy → Runtime 
 - **Every addressable object carries `uri`.** Anything rendered is copyable as
   a link, and history, favorites, layout presets, and graph edges store URIs
   and nothing else (§3.2). `formatUri` and `toUri` are the only ways to mint
-  one — a `Uri` is branded, so a bare string cannot drift into a URI field.
+  one — a `Uri` is branded, so a bare string cannot drift into a URI field, and
+  `formatUri` refuses parts it cannot spell rather than mint a URI that will
+  not read back.
 - **Timestamps are ISO-8601 strings**, never `Date` — these shapes cross the
   route-handler JSON boundary and are cached by TanStack Query.
 - **Closed unions ship as a `const` array plus a derived type**

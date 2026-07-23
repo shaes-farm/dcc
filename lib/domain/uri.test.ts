@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   API_KINDS,
   URI_SCHEMES,
+  UriFormatError,
   UriParseError,
   WORKLOAD_KINDS,
   formatUri,
@@ -448,5 +449,75 @@ describe("malformed URIs", () => {
 
     if (result.ok) throw new Error("expected the parse to fail");
     expect(result.error.scheme).toBeUndefined();
+  });
+});
+
+/**
+ * The type system gets the *shape* of the parts right, not their contents:
+ * every case below type-checks. Since `formatUri` is the only way to mint a
+ * `Uri`, a URI it minted that cannot be read back would make the brand a
+ * promise the data breaks — so it refuses instead.
+ */
+describe("parts that have no URI", () => {
+  const UNFORMATTABLE: Array<[label: string, parts: ParsedUri]> = [
+    ["an empty segment", { scheme: "service", service: "" }],
+    [
+      "a negative PR number",
+      {
+        scheme: "pr",
+        provider: "github",
+        owner: "acme",
+        repo: "checkout-svc",
+        number: -1,
+      },
+    ],
+    [
+      "a fractional PR number",
+      {
+        scheme: "pr",
+        provider: "github",
+        owner: "acme",
+        repo: "checkout-svc",
+        number: 48.2,
+      },
+    ],
+    [
+      "a document path with a missing component",
+      {
+        scheme: "doc",
+        provider: "repo-md",
+        repo: "checkout-svc",
+        path: "docs//adr.md",
+      },
+    ],
+    [
+      "an artifact with no name",
+      { scheme: "artifact", registry: "ghcr", name: "", version: "3.7.12" },
+    ],
+  ];
+
+  it.each(UNFORMATTABLE)("refuses to mint a URI from %s", (_label, parts) => {
+    expect(() => formatUri(parts)).toThrow(UriFormatError);
+  });
+
+  it("carries the parts, since there is no input string to point at", () => {
+    const parts: ParsedUri = { scheme: "env", env: "" };
+
+    try {
+      formatUri(parts);
+      throw new Error("expected formatUri to refuse");
+    } catch (error) {
+      if (!(error instanceof UriFormatError)) throw error;
+      expect(error.parts).toBe(parts);
+      expect(error.message).toContain("env");
+    }
+  });
+
+  it("mints every URI the parts can actually spell", () => {
+    fc.assert(
+      fc.property(anyParsedUri, (parts) => {
+        expect(() => formatUri(parts)).not.toThrow();
+      }),
+    );
   });
 });

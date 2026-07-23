@@ -190,6 +190,24 @@ export class UriParseError extends Error {
   }
 }
 
+/**
+ * Parts that cannot be written as a URI.
+ *
+ * The mirror of `UriParseError`, and a different mistake: the caller built a
+ * shape the grammar has no spelling for — an empty segment, a negative PR
+ * number, a document path with a missing component — rather than pasted a bad
+ * string. Carries the parts, since there is no input string to point at.
+ */
+export class UriFormatError extends Error {
+  readonly parts: ParsedUri;
+
+  constructor(parts: ParsedUri, reason: string) {
+    super(`Cannot format ${parts.scheme} URI: ${reason}`);
+    this.name = "UriFormatError";
+    this.parts = parts;
+  }
+}
+
 /** The result of a parse that is allowed to fail — see `safeParseUri`. */
 export type UriParseResult =
   { ok: true; value: ParsedUri } | { ok: false; error: UriParseError };
@@ -240,17 +258,33 @@ export function safeParseUri(input: string): UriParseResult {
 }
 
 /**
- * Writes parts back out as a URI. The only way to mint a `Uri`.
+ * Writes parts back out as a URI. The only way to mint a `Uri`, and it throws
+ * `UriFormatError` rather than mint one that cannot be read back.
  *
  * Output is canonical: the same parts always produce the same bytes, which is
  * what lets URIs be compared with `===`, used as `Map` keys in the Knowledge
  * Graph, and deduplicated in favorites.
+ *
+ * The type system gets the shape of the parts right but not their contents —
+ * `{ scheme: "service", service: "" }` and a negative PR number both type-check
+ * — so the result is read back before it is branded. That is the whole point of
+ * the brand: a `Uri` that fails to parse would make "everything is addressable"
+ * (§3.2) a claim the types assert and the data quietly breaks. Verifying with
+ * the parser rather than a second set of rules is deliberate; a copy of the
+ * grammar written for validation is a copy that drifts.
  */
 export function formatUri(parsed: ParsedUri): Uri {
   const codec = SCHEME_CODECS[parsed.scheme];
   // The record is keyed by scheme and `parsed` is discriminated on it, but
   // TypeScript cannot correlate the two across an index access.
-  return `${parsed.scheme}://${codec.format(parsed as never)}` as Uri;
+  const uri = `${parsed.scheme}://${codec.format(parsed as never)}`;
+
+  const readBack = safeParseUri(uri);
+  if (!readBack.ok) {
+    throw new UriFormatError(parsed, readBack.error.message);
+  }
+
+  return uri as Uri;
 }
 
 /**
