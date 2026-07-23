@@ -1,0 +1,25 @@
+:root{
+  --font-ui:"IBM Plex Sans",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  /* Dense-but-calm scale; base UI = 13px */
+  --fs-2xs:10px; /* tier badges, overline labels */
+  --fs-xs:11px;  /* timestamps, meta, table headers */
+  --fs-sm:12px;  /* secondary text, tags, log lines */
+  --fs-base:13px;/* body, controls, table cells */
+  --fs-md:14px;  /* panel titles, drawer body */
+  --fs-lg:16px;  /* drawer titles, dialog titles */
+  --fs-xl:20px;  /* page/workspace title */
+  --fs-2xl:28px; /* big rollup numbers */
+  --lh-tight:1.25; /* @kind font */
+  --lh-normal:1.45; /* @kind font */
+  --lh-log:1.7; /* @kind font */
+  --fw-regular:400; /* @kind font */
+  --fw-medium:500; /* @kind font */
+  --fw-semibold:600; /* @kind font */
+  --fw-bold:700; /* @kind font */
+  --tracking-overline:.08em; /* uppercase section labels */
+}
+body{margin:0;font-family:var(--font-ui);font-size:var(--fs-base);line-height:var(--lh-normal);color:var(--text-1);background:var(--bg-0);-webkit-font-smoothing:antialiased}
+code,pre,kbd{font-family:var(--font-mono)}
+a{color:var(--link);text-decoration:none}
+a:hover{color:var(--accent-hover);text-decoration:underline}

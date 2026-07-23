@@ -1,0 +1,16 @@
+:root{
+  /* 4px scale */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px; --sp-10:40px;
+  /* Radii */
+  --radius-1:4px;  /* controls, tags */
+  --radius-2:6px;  /* panels, cards */
+  --radius-3:8px;  /* dialogs, palette, drawers */
+  --radius-full:999px; /* status badges, dots */
+  /* Fixed chrome */
+  --rail-w:240px;
+  --drawer-w:420px;
+  --statusbar-h:28px;
+  --panel-header-h:34px;
+  --control-h:28px;    /* default control height */
+  --control-h-lg:34px;
+}
