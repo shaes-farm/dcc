@@ -58,11 +58,18 @@ const providerAuth = z.union([
  * behind the instance (`github`, `kubernetes`, `vercel`, `grafana`, …), kept an
  * open string in v1 rather than a per-vendor discriminated union — the §4.1
  * example is the coverage bar, and vendors expand faster than the schema should
- * churn. Vendor-specific fields (`kubeContext`, `teamId`, `url`, …) are optional
- * and passthrough for the same reason.
+ * churn. Vendor-specific fields (`kubeContext`, `teamId`, `url`, …) are optional,
+ * but the object itself is closed like every other section here: an unlisted
+ * field is far more likely to be a typo (`toknEnv`) than a signal a config
+ * author intends silently dropped.
+ *
+ * §4.1's example shows two credential shapes on different providers — `auth`
+ * (`"gh-cli"` or `{ tokenEnv }`) on `github`, and a bare top-level `tokenEnv` on
+ * `vercel`/`cf`. Both are accepted, but not on the same entry: declaring both
+ * leaves no rule for which one a resolver should read, so it is rejected below.
  */
 const providerConfig = z
-  .object({
+  .strictObject({
     id: idRef,
     kind: z.string().min(1),
     label: z.string().optional(),
@@ -76,6 +83,15 @@ const providerConfig = z
     url: z.string().optional(),
     reportUrl: z.string().optional(),
   })
+  .refine(
+    (provider) =>
+      !(provider.auth !== undefined && provider.tokenEnv !== undefined),
+    {
+      error:
+        "specify auth or tokenEnv, not both — see §4.1 for the two accepted shapes",
+      path: ["tokenEnv"],
+    },
+  )
   .meta({ id: "ProviderConfig", title: "Provider" });
 
 /**
@@ -126,14 +142,19 @@ const environmentConfig = z
   .meta({ id: "EnvironmentConfig", title: "Environment" });
 
 /**
- * An API spec entry (§4.1 `apis`). `type` mirrors the spec's literal
- * `openapi | graphql`; note this differs from the domain's `ApiKind`
- * (`rest | graphql`) — Swagger/OpenAPI collapse to `rest` only after ingestion.
+ * `apis[].type` (§4.1) — the format a config author declares the spec in.
+ * Differs from the domain's `ApiKind` (`rest | graphql`): Swagger/OpenAPI
+ * collapse to `rest` only after ingestion, so config still says `openapi`.
  */
+export const API_SPEC_KINDS = ["openapi", "graphql"] as const;
+
+export type ApiSpecKind = (typeof API_SPEC_KINDS)[number];
+
+/** An API spec entry (§4.1 `apis`). */
 const apiConfig = z
   .strictObject({
     id: idRef,
-    type: z.enum(["openapi", "graphql"]),
+    type: z.enum(API_SPEC_KINDS),
     url: z.string().min(1),
     auth: z.strictObject({ kind: z.literal("bearer"), tokenEnv }).optional(),
   })

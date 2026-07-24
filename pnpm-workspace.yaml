@@ -1,5 +1,6 @@
 allowBuilds:
   # Next.js image optimization (native binary).
+  esbuild: true
   sharp: true
   # Rust resolver used by eslint-config-next's import plugin.
   unrs-resolver: true

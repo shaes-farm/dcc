@@ -53,6 +53,13 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm test
 
+      # Exercises the actual `pnpm gen:schema` command, not just the generator
+      # logic under vitest's own resolver — schema.test.ts's drift check covers
+      # the latter, this covers the former.
+      - name: Config JSON Schema is up to date
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: pnpm gen:schema && git diff --exit-code schema/
+
       # Runs through bin/dcc.mjs, which also sets NEXT_TELEMETRY_DISABLED.
       - name: Build
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
