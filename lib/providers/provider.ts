@@ -76,8 +76,12 @@ export interface ConnectionResult {
 export interface ActionResult {
   ok: boolean;
   at: IsoDateTime;
-  /** What was acted on, echoed back for the audit entry. */
-  targetUri?: Uri;
+  /**
+   * What was acted on — a `run`, `workload`, or `env` URI. Required: the
+   * adapter is always handed a concrete target, and the audit entry echoes it
+   * back, so an absent one has no meaning.
+   */
+  targetUri: Uri;
   /** Provider detail: a queued-run URL, a rejection reason. */
   message?: string;
 }

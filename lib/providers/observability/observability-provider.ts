@@ -9,9 +9,10 @@ import type { ProviderAdapter } from "../provider";
  * therefore maps to a `Capability`, and the health board must render from
  * `HealthCheck`s alone when none of these are configured (§6.4).
  *
- * Query and result shapes live here, not in `lib/domain`: the domain owns the
- * addressable nodes (`Dashboard`, `Trace`, `LogStream`), this owns the payloads
- * (`lib/domain/observability.ts`).
+ * Query and result shapes (`MetricQuery`, `Series`, `LogSearch`) live here, not
+ * in `lib/domain`: the domain owns the addressable nodes (`Dashboard`, `Trace`,
+ * `LogStream`), this layer owns the payloads. That split is stated from the
+ * other side in `lib/domain/observability.ts`'s header.
  */
 export interface ObservabilityProvider extends ProviderAdapter {
   kind: "observability";

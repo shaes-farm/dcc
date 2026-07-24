@@ -1,4 +1,10 @@
-import type { Deployment, Environment, Uri, Workload } from "@/lib/domain";
+import type {
+  Deployment,
+  Environment,
+  IsoDateTime,
+  Uri,
+  Workload,
+} from "@/lib/domain";
 import type { LogPage } from "../logs";
 import type { ActionResult, ProviderAdapter } from "../provider";
 
@@ -48,8 +54,8 @@ export interface EnvironmentDetail {
 
 /** Log-tail parameters for `getLogs`. */
 export interface LogQuery {
-  /** Only lines at or after this instant (ISO-8601). */
-  since?: string;
+  /** Only lines at or after this instant. */
+  since?: IsoDateTime;
   /** Max lines to return. */
   limit?: number;
   /** Opaque continuation token from a prior `LogPage.nextCursor`. */

@@ -1,4 +1,4 @@
-import type { Api } from "@/lib/domain";
+import type { Api, Uri } from "@/lib/domain";
 import type { ProviderAdapter } from "../provider";
 
 /**
@@ -30,7 +30,7 @@ export interface SpecSource {
 /** A single request issued from the playground. */
 export interface PlaygroundRequest {
   /** `op://…` URI of the operation being exercised. */
-  operation: string;
+  operation: Uri;
   method: string;
   /** Fully-resolved request URL. */
   url: string;
