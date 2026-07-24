@@ -26,6 +26,8 @@ import { z } from "zod";
 
 import { ENVIRONMENT_TIERS } from "@/lib/domain";
 
+import { checkReferenceIntegrity } from "./reference-integrity";
+
 /**
  * Every reference in this file is an **id string**, never a `Uri`. Config is a
  * reference graph keyed by id (§4.1); URIs are minted later, at resolution. A
@@ -216,29 +218,40 @@ const uiConfig = z
   .meta({ id: "UiConfig", title: "UI" });
 
 /**
+ * The root config's shape (§4.1), kept as its own binding so `DccConfig` can
+ * be inferred from it directly. `checkReferenceIntegrity` (below) takes a
+ * `DccConfig`, and `dccConfigSchema` attaches `checkReferenceIntegrity` to
+ * this same shape — inferring `DccConfig` from `dccConfigSchema` instead
+ * would make the schema's own definition depend on its inferred output type.
+ */
+const dccConfigShape = z.strictObject({
+  $schema: z.string().optional(),
+  workspace: workspaceConfig,
+  providers: providersConfig.optional(),
+  repositories: z.array(repositoryConfig).optional(),
+  environments: z.array(environmentConfig).optional(),
+  apis: z.array(apiConfig).optional(),
+  dashboards: z.array(dashboardConfig).optional(),
+  healthChecks: z.array(healthCheckConfig).optional(),
+  services: z.array(serviceConfig).optional(),
+  actions: actionsConfig.optional(),
+  ui: uiConfig.optional(),
+});
+
+export type DccConfig = z.infer<typeof dccConfigShape>;
+
+/**
  * The root config (§4.1). Optionality mirrors the spec: a workspace with no
  * environments or actions yet is valid.
  *
- * Reference-integrity (dangling id) validation is intentionally *not* here: it
- * needs the whole config in hand and belongs with the config loader/repair
- * screen (§4.3). This root schema leaves a clean seam — a future
- * `.superRefine((cfg, ctx) => …)` collecting declared ids and flagging
- * dangling references attaches here without touching the per-field shapes.
+ * Reference-integrity (dangling ids, duplicate ids) is layered on via
+ * `.superRefine()` rather than folded into the per-field shapes above — it
+ * needs the whole config in hand to know what's declared, where those shapes
+ * only see one section at a time. See `reference-integrity.ts` (#7) for the
+ * check itself; `dccConfigSchema.parse`/`safeParse` runs both passes as one.
  */
-export const dccConfigSchema = z
-  .strictObject({
-    $schema: z.string().optional(),
-    workspace: workspaceConfig,
-    providers: providersConfig.optional(),
-    repositories: z.array(repositoryConfig).optional(),
-    environments: z.array(environmentConfig).optional(),
-    apis: z.array(apiConfig).optional(),
-    dashboards: z.array(dashboardConfig).optional(),
-    healthChecks: z.array(healthCheckConfig).optional(),
-    services: z.array(serviceConfig).optional(),
-    actions: actionsConfig.optional(),
-    ui: uiConfig.optional(),
-  })
+export const dccConfigSchema = dccConfigShape
+  .superRefine(checkReferenceIntegrity)
   .meta({
     id: "DccConfig",
     title: "DCC configuration",
@@ -246,7 +259,6 @@ export const dccConfigSchema = z
       "Workspace configuration for the Developer Control Center (dcc.config.json, spec §4.1).",
   });
 
-export type DccConfig = z.infer<typeof dccConfigSchema>;
 export type ProvidersConfig = z.infer<typeof providersConfig>;
 export type ServiceConfig = z.infer<typeof serviceConfig>;
 export type ProviderConfig = z.infer<typeof providerConfig>;
