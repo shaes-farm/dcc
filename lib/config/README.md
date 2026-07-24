@@ -58,32 +58,53 @@ the repo root.
 ## Reference-integrity validation
 
 `dccConfigSchema` validates each section's shape in isolation; a service
-naming an unknown repository, or a dashboard pointing at a provider id that
+naming an unknown repository, or an environment pointing at a provider id that
 doesn't exist, needs the whole config in hand to catch. That check —
 `checkReferenceIntegrity` in `reference-integrity.ts` — is wired into
 `dccConfigSchema` via `.superRefine()`, so `dccConfigSchema.parse`/`safeParse`
-is still the one call site for both concerns. Dangling references are rejected
-with a did-you-mean suggestion when a declared id is close enough to be the
-obvious typo (the spec's own example: "service `checkout` references unknown
-dashboard `errors` — did you mean `errors`?"); the same pass flags duplicate
-ids within a collection, since the id-collection machinery needed for
-dangling-reference checks makes that nearly free.
+is still the one call site for both concerns. It runs with `{ when: () =>
+true }`, overriding Zod's default of skipping a `.superRefine()` once any
+other issue exists anywhere in the config — without that, one unrelated typo
+(a bad `environments[].tier`, say) would hide every dangling/duplicate-id
+problem behind it. Because of that override, the check can't trust the config
+actually matches `DccConfig` at runtime (a section that failed its own shape
+check may hold whatever the author wrote), so it reads defensively rather than
+assuming the type-level shape holds — see the doc comment on
+`checkReferenceIntegrity` for how.
+
+Every reference field is checked: `workspace.defaultEnvironment`,
+`repositories[].provider`, `environments[].provider`,
+`dashboards[].provider`, and `services[].repository`/`apis[]`/`dependsOn[]`/
+`baseUrls` (keys, since it's a record keyed by environment id). Dangling
+references are rejected with a did-you-mean suggestion when a declared id is
+close enough to be the obvious typo, in the style of the spec's own
+illustration ("service `checkout` references unknown dashboard `errors` — did
+you mean `errors`?") — though that literal pairing isn't itself one of the
+checks above, since `serviceConfig` has no `dashboards` field to be dangling
+in (dashboards attach to a service by inference/naming, §4.2, never a declared
+id list). The same pass flags duplicate ids within a collection, since the
+id-collection machinery needed for dangling-reference checks makes that
+nearly free.
 
 Provider references are checked against the matching category
 (`repositories[].provider` against `providers.git`, not a flattened pool of
 every provider id), so a repository accidentally pointing at an observability
-provider is still caught.
+provider is still caught. Adding a new reference-shaped field to `schema.ts`
+needs a matching check added here by hand — nothing structurally enforces the
+link between "field declared as a reference" and "check exists for it."
 
 ## Loading the config
 
 `load.ts` resolves the config path (an explicit override, then `DCC_CONFIG`,
-then `./dcc.config.json`, per §4.1), reads and JSON-parses the file, and runs
-it through `dccConfigSchema`. It mirrors the throw/`safe*` pair
-`lib/domain/uri.ts` uses for `parseUri`/`safeParseUri`: `loadConfig` throws
-`ConfigLoadError` on any failure (missing file, malformed JSON, invalid
-config), and `safeLoadConfig` returns a `{ ok, value } | { ok, error }` result
-instead — the one to reach for anywhere a bad config is a view to render
-rather than an exception to catch.
+then `./dcc.config.json`, per §4.1 — an empty string from either is treated as
+unset, so it doesn't resolve to `process.cwd()` itself), reads and JSON-parses
+the file, and runs it through `dccConfigSchema`. It returns the same `{ ok,
+value } | { ok, error }` shape `lib/domain/uri.ts` uses for `safeParseUri` — a
+hand-edited config file is exactly the kind of external, untrusted input where
+a bad one is a view to render rather than an exception to catch — though the
+composition runs the other way: `safeLoadConfig` holds all the logic, and
+`loadConfig` is the convenience wrapper that throws
+`ConfigLoadError` for callers that want to fail fast instead.
 
 ## Not here (yet)
 

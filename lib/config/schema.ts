@@ -249,9 +249,16 @@ export type DccConfig = z.infer<typeof dccConfigShape>;
  * needs the whole config in hand to know what's declared, where those shapes
  * only see one section at a time. See `reference-integrity.ts` (#7) for the
  * check itself; `dccConfigSchema.parse`/`safeParse` runs both passes as one.
+ *
+ * `{ when: () => true }` forces that check to run even when some other field
+ * failed its own shape validation — Zod's default is to skip a `.superRefine()`
+ * whenever *any* issue exists anywhere in the config, which would otherwise
+ * hide every dangling/duplicate-id problem behind one unrelated typo.
+ * `checkReferenceIntegrity` is written defensively to tolerate this (see its
+ * doc comment in `reference-integrity.ts`).
  */
 export const dccConfigSchema = dccConfigShape
-  .superRefine(checkReferenceIntegrity)
+  .superRefine(checkReferenceIntegrity, { when: () => true })
   .meta({
     id: "DccConfig",
     title: "DCC configuration",

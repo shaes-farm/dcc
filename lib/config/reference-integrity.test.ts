@@ -72,6 +72,7 @@ function baseConfig(): ConfigInput {
         repository: "checkout-svc",
         apis: ["checkout-rest"],
         dependsOn: ["catalog"],
+        baseUrls: { dev: "https://dev.acme.dev/checkout" },
       },
     ],
   };
@@ -175,6 +176,17 @@ describe("dccConfigSchema reference integrity (§4.1, #7)", () => {
         badValue: "catalo",
         suggestion: "catalog",
       },
+      {
+        label: "services[].baseUrls key",
+        mutate: (config) => {
+          (getArray(config, ["services"])[1] as ConfigInput).baseUrls = {
+            de: "https://dev.acme.dev/checkout",
+          };
+        },
+        path: ["services", 1, "baseUrls", "de"],
+        badValue: "de",
+        suggestion: "dev",
+      },
     ];
 
     it.each(cases)(
@@ -245,6 +257,64 @@ describe("dccConfigSchema reference integrity (§4.1, #7)", () => {
       );
       expect(issue?.message).toContain(`in \`${label}\``);
       expect(issue?.path).toEqual([...path, duplicateIndex, "id"]);
+    });
+  });
+
+  describe("running alongside an unrelated shape error", () => {
+    // Zod skips a `.superRefine()` by default once any issue exists anywhere
+    // in the config; `dccConfigSchema` overrides that with `{ when: () =>
+    // true }` specifically so this doesn't happen — regression coverage for
+    // that override, not just the shape error or the reference error alone.
+    it("still reports a dangling reference alongside an unrelated shape error", () => {
+      const config = baseConfig();
+      // An enum violation, unrelated to any reference field.
+      (getArray(config, ["environments"])[0] as ConfigInput).tier = "prod";
+      (getArray(config, ["services"])[1] as ConfigInput).repository =
+        "unknown-repo";
+
+      const result = dccConfigSchema.safeParse(config);
+      expect(result.success).toBe(false);
+
+      const issues = result.error?.issues ?? [];
+      const tierIssue = issues.find(
+        (issue) =>
+          JSON.stringify(issue.path) ===
+          JSON.stringify(["environments", 0, "tier"]),
+      );
+      const referenceIssue = issues.find((issue) =>
+        issue.message.includes("unknown-repo"),
+      );
+      expect(tierIssue).toBeDefined();
+      expect(referenceIssue).toBeDefined();
+    });
+  });
+
+  describe("malformed sections (defensive against non-shape-conforming input)", () => {
+    // These exercise `checkReferenceIntegrity` running over data that doesn't
+    // actually match `DccConfig` — the same situation the mixed-error case
+    // above creates for the rest of the config, just more extreme. The bar
+    // here is "does not throw," not any particular message.
+    const malformed: Array<{ label: string; config: unknown }> = [
+      {
+        label: "a section that isn't an array",
+        config: { workspace: { name: "Acme" }, services: "not an array" },
+      },
+      {
+        label: "an array entry that's null",
+        config: { workspace: { name: "Acme" }, services: [null] },
+      },
+      {
+        label: "providers replaced with a non-object",
+        config: { workspace: { name: "Acme" }, providers: "oops" },
+      },
+      {
+        label: "workspace replaced with null",
+        config: { workspace: null },
+      },
+    ];
+
+    it.each(malformed)("does not throw on $label", ({ config }) => {
+      expect(() => dccConfigSchema.safeParse(config)).not.toThrow();
     });
   });
 });
