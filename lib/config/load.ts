@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { locateJsonPath, type TextPosition } from "./locate";
 import { dccConfigSchema, type DccConfig } from "./schema";
 
 /**
@@ -24,10 +25,18 @@ import { dccConfigSchema, type DccConfig } from "./schema";
 /** Default location of the config file, relative to `process.cwd()`. */
 export const DEFAULT_CONFIG_PATH = "dcc.config.json";
 
-/** One validation problem, in Zod's own path shape (a mix of keys and indices). */
+/**
+ * One validation problem, in Zod's own path shape (a mix of keys and
+ * indices). `line`/`column` are 1-indexed and best-effort: present when
+ * `locateJsonPath` (or, for malformed JSON, the engine's own `SyntaxError`
+ * message) can place the problem in the raw text, absent when it can't
+ * (a missing file, or a path that doesn't resolve against the text).
+ */
 export interface ConfigIssue {
   path: (string | number)[];
   message: string;
+  line?: number;
+  column?: number;
 }
 
 /**
@@ -82,6 +91,19 @@ function fail(path: string, message: string): ConfigLoadResult {
 }
 
 /**
+ * Best-effort `line`/`column` out of a `JSON.parse` `SyntaxError`'s own
+ * message — modern V8 (verified on Node v24, the version this repo develops
+ * against) already reports it there (e.g. "... in JSON at position 12 (line
+ * 2 column 3)"). Not a language guarantee, so a message without that suffix
+ * just yields `undefined` and the repair screen shows the message alone.
+ */
+function positionFromSyntaxError(message: string): TextPosition | undefined {
+  const match = /line (\d+) column (\d+)/.exec(message);
+  if (!match) return undefined;
+  return { line: Number(match[1]), column: Number(match[2]) };
+}
+
+/**
  * Loads and validates the config, returning a result instead of throwing —
  * everything reaching this function came from a file on disk that the user
  * hand-edits, and a bad one is a view to render, not an exception to catch
@@ -107,15 +129,27 @@ export function safeLoadConfig(override?: string): ConfigLoadResult {
   try {
     parsed = JSON.parse(raw);
   } catch (error) {
-    return fail(path, `${path} is not valid JSON: ${(error as Error).message}`);
+    const message = (error as Error).message;
+    const position = positionFromSyntaxError(message);
+    return {
+      ok: false,
+      error: new ConfigLoadError(path, [
+        {
+          path: [],
+          message: `${path} is not valid JSON: ${message}`,
+          ...position,
+        },
+      ]),
+    };
   }
 
   const result = dccConfigSchema.safeParse(parsed);
   if (!result.success) {
-    const issues = result.error.issues.map((issue) => ({
-      path: issue.path as (string | number)[],
-      message: issue.message,
-    }));
+    const issues = result.error.issues.map((issue) => {
+      const issuePath = issue.path as (string | number)[];
+      const position = locateJsonPath(raw, issuePath);
+      return { path: issuePath, message: issue.message, ...position };
+    });
     return { ok: false, error: new ConfigLoadError(path, issues) };
   }
 

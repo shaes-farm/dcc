@@ -121,12 +121,17 @@ describe("safeLoadConfig", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error.issues[0].message).toContain("not valid JSON");
+      // Modern V8 (Node v24, this repo's dev version) reports a line/column
+      // in the SyntaxError message itself; `positionFromSyntaxError` in
+      // load.ts just extracts it, so this is really asserting that plumbing.
+      expect(result.error.issues[0].line).toBe(1);
+      expect(result.error.issues[0].column).toBeGreaterThan(0);
     }
   });
 
-  it("returns an error result for a schema-shape violation", () => {
+  it("returns an error result for a schema-shape violation, with a line reference", () => {
     const tempPath = writeTempConfig(
-      JSON.stringify({ workspace: { name: "" } }),
+      JSON.stringify({ workspace: { name: "" } }, null, 2),
     );
 
     const result = safeLoadConfig(tempPath);
@@ -134,15 +139,23 @@ describe("safeLoadConfig", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error.issues.length).toBeGreaterThan(0);
+      const issue = result.error.issues[0];
+      // `"name": ""` is on line 3 of the pretty-printed fixture above.
+      expect(issue.line).toBe(3);
+      expect(issue.column).toBeGreaterThan(0);
     }
   });
 
-  it("surfaces a dangling reference without throwing", () => {
+  it("surfaces a dangling reference without throwing, with a line reference", () => {
     const tempPath = writeTempConfig(
-      JSON.stringify({
-        workspace: { name: "Acme" },
-        services: [{ id: "checkout", repository: "unknown-repo" }],
-      }),
+      JSON.stringify(
+        {
+          workspace: { name: "Acme" },
+          services: [{ id: "checkout", repository: "unknown-repo" }],
+        },
+        null,
+        2,
+      ),
     );
 
     const result = safeLoadConfig(tempPath);
@@ -153,6 +166,9 @@ describe("safeLoadConfig", () => {
         candidate.message.includes("unknown repository"),
       );
       expect(issue?.message).toContain("`unknown-repo`");
+      // `"repository": "unknown-repo"` is on line 8 of the pretty-printed
+      // fixture above.
+      expect(issue?.line).toBe(8);
     }
   });
 });

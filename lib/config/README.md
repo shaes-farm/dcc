@@ -47,9 +47,11 @@ named — see [ADR-0003](../../docs/adr/adr-0003.md).
 | `json-schema.ts`              | `serializeJsonSchema` / `SCHEMA_PATH` — the import-safe generator half      |
 | `reference-integrity.ts`      | `checkReferenceIntegrity` — dangling/duplicate-id validation (§4.1, #7)     |
 | `load.ts`                     | `loadConfig` / `safeLoadConfig` — resolves `DCC_CONFIG`, reads, parses (#7) |
+| `locate.ts`                   | `locateJsonPath` — issue path → line/column in the raw text (§4.3, #8)      |
 | `schema.test.ts`              | accept/reject cases, the no-secret-value guard, and the drift guard         |
 | `reference-integrity.test.ts` | dangling-reference, duplicate-id, and did-you-mean cases                    |
 | `load.test.ts`                | file resolution, missing/malformed-file, and pass-through error cases       |
+| `locate.test.ts`              | object keys, array indices, and not-found paths                             |
 
 The CLI wrapper is `scripts/generate-config-schema.mts`; the example config that
 doubles as the autocomplete demo and the test fixture is `dcc.config.json` at
@@ -106,9 +108,28 @@ composition runs the other way: `safeLoadConfig` holds all the logic, and
 `loadConfig` is the convenience wrapper that throws
 `ConfigLoadError` for callers that want to fail fast instead.
 
+Each `ConfigIssue` also carries a best-effort `line`/`column`: schema and
+reference-integrity issues run through `locate.ts`'s `locateJsonPath`, which
+walks the raw JSON text for the offending `path`; a malformed-JSON issue
+takes its position straight from the `SyntaxError` message instead, since
+`locateJsonPath` needs already-valid JSON to walk. Either can come back
+`undefined` — a missing file has no position to point at, and a path that
+doesn't resolve against the text just omits the fields — so `line`/`column`
+are optional on `ConfigIssue`, not guaranteed.
+
+## Rendering the repair screen
+
+`components/config/config-repair-screen.tsx` renders a `ConfigLoadError` —
+the file path, and each issue's location (`line`/`column` above, when
+present) and message (§4.3, #8). `app/layout.tsx` calls `safeLoadConfig()`
+on every request (`export const dynamic = "force-dynamic"` — otherwise Next
+could render the layout once at build time and never re-check) and renders
+this screen in place of the app shell when it fails, so a broken
+`dcc.config.json` degrades gracefully on every route, not just `/`.
+
 ## Not here (yet)
 
-The config **repair screen** (§4.3) that renders these errors is a separate,
-later issue (#8). The **file watcher** and hot-reload on external edits
-(§4.3) is also later (#73) — `load.ts` reads the file once per call and does
-not watch it.
+The **file watcher** and hot-reload on external edits (§4.3) is later (#73)
+— `load.ts` reads the file once per call and does not watch it, so
+recovering from the repair screen today means fixing the file and reloading
+the page by hand.
