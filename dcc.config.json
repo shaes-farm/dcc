@@ -1,0 +1,177 @@
+{
+  "$schema": "./schema/dcc.schema.json",
+  "workspace": { "name": "Acme Commerce", "defaultEnvironment": "dev" },
+
+  "providers": {
+    "git": [{ "id": "github", "kind": "github", "auth": "gh-cli" }],
+    "deployment": [
+      { "id": "k8s-dev", "kind": "kubernetes", "kubeContext": "acme-dev" },
+      { "id": "k8s-qa", "kind": "kubernetes", "kubeContext": "acme-qa" },
+      {
+        "id": "vercel",
+        "kind": "vercel",
+        "teamId": "team_x",
+        "tokenEnv": "VERCEL_TOKEN"
+      },
+      {
+        "id": "cf",
+        "kind": "cloudflare",
+        "accountId": "acct_123",
+        "tokenEnv": "CF_API_TOKEN"
+      }
+    ],
+    "observability": [
+      {
+        "id": "grafana",
+        "kind": "grafana",
+        "url": "https://grafana.acme.dev",
+        "tokenEnv": "GRAFANA_TOKEN"
+      },
+      {
+        "id": "prom",
+        "kind": "prometheus",
+        "url": "https://prom.acme.dev",
+        "tokenEnv": "PROM_TOKEN"
+      },
+      {
+        "id": "loki",
+        "kind": "loki",
+        "url": "https://loki.acme.dev",
+        "tokenEnv": "LOKI_TOKEN"
+      },
+      {
+        "id": "tempo",
+        "kind": "tempo",
+        "url": "https://tempo.acme.dev",
+        "tokenEnv": "TEMPO_TOKEN"
+      }
+    ],
+    "external": [
+      {
+        "id": "wiz",
+        "kind": "wiz",
+        "reportUrl": "https://app.wiz.io/reports/acme",
+        "tokenEnv": "WIZ_TOKEN"
+      }
+    ]
+  },
+
+  "repositories": [
+    {
+      "id": "storefront",
+      "provider": "github",
+      "owner": "acme",
+      "name": "storefront",
+      "tags": ["app", "nextjs"]
+    },
+    {
+      "id": "checkout-svc",
+      "provider": "github",
+      "owner": "acme",
+      "name": "checkout-svc",
+      "tags": ["service"]
+    },
+    {
+      "id": "ui-kit",
+      "provider": "github",
+      "owner": "acme",
+      "name": "ui-kit",
+      "tags": ["library"]
+    }
+  ],
+
+  "environments": [
+    {
+      "id": "dev",
+      "label": "Development",
+      "provider": "k8s-dev",
+      "namespaces": ["storefront", "checkout"],
+      "tier": "sandbox"
+    },
+    {
+      "id": "qa",
+      "label": "QA",
+      "provider": "k8s-qa",
+      "namespaces": ["storefront", "checkout"],
+      "tier": "shared"
+    },
+    {
+      "id": "preview",
+      "label": "Vercel Previews",
+      "provider": "vercel",
+      "projectIds": ["prj_storefront"],
+      "tier": "sandbox"
+    },
+    {
+      "id": "edge",
+      "label": "CF Workers",
+      "provider": "cf",
+      "workers": ["img-resizer"],
+      "tier": "shared"
+    }
+  ],
+
+  "apis": [
+    {
+      "id": "checkout-rest",
+      "type": "openapi",
+      "url": "https://qa.acme.dev/checkout/openapi.json",
+      "auth": { "kind": "bearer", "tokenEnv": "CHECKOUT_QA_TOKEN" }
+    },
+    {
+      "id": "catalog-graph",
+      "type": "graphql",
+      "url": "https://qa.acme.dev/graphql"
+    }
+  ],
+
+  "dashboards": [
+    { "id": "errors", "provider": "grafana", "uid": "uid-errors" },
+    { "id": "latency", "provider": "grafana", "uid": "uid-latency" }
+  ],
+
+  "healthChecks": [
+    {
+      "id": "hc-storefront",
+      "name": "Storefront",
+      "url": "https://qa.acme.dev/healthz",
+      "expectStatus": 200
+    },
+    {
+      "id": "hc-checkout",
+      "name": "Checkout",
+      "url": "https://qa.acme.dev/checkout/healthz",
+      "expectStatus": 200
+    }
+  ],
+
+  "services": [
+    { "id": "storefront" },
+    { "id": "ui-kit" },
+    { "id": "catalog", "apis": ["catalog-graph"] },
+    {
+      "id": "checkout",
+      "name": "Checkout Service",
+      "repository": "checkout-svc",
+      "workloadSelector": {
+        "namespace": "checkout",
+        "labels": { "app": "checkout" }
+      },
+      "baseUrls": {
+        "dev": "https://dev.acme.dev/checkout",
+        "qa": "https://qa.acme.dev/checkout"
+      },
+      "dependsOn": ["catalog"]
+    }
+  ],
+
+  "actions": {
+    "enabled": true,
+    "allow": ["restartWorkload", "rerunCi", "triggerDeploy"],
+    "confirmPhraseForTiers": ["prod-like"]
+  },
+
+  "ui": {
+    "pollingSeconds": { "environments": 15, "git": 60, "dashboards": 30 }
+  }
+}
