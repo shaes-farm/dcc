@@ -18,10 +18,10 @@ preview tool here, so this skill is the self-check in place of one.
      for sequence diagrams).
    - Brackets/parens opened are closed, node IDs are consistent.
 3. Render it:
-   - If the user wants to *view* it, publish via the Artifact tool — Markdown artifacts
+   - If the user wants to _view_ it, publish via the Artifact tool — Markdown artifacts
      support ` ```mermaid ` fences, HTML artifacts support `<pre class="mermaid">`. No
      external Mermaid script is needed either way.
-   - If the user wants a diagram *committed to the repo*, write it to a `.mmd` file at a
+   - If the user wants a diagram _committed to the repo_, write it to a `.mmd` file at a
      path they'd expect (near the code it documents), not into `docs/design/`
      (including its nested `mockups/`) — that directory is a vendored export (see this
      repo's `CLAUDE.md`) and is never hand-edited.
