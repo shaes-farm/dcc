@@ -40,18 +40,16 @@ This is for decisions, not implementation choices — those belong in the code a
 
 ## UI work starts from the designs
 
-The spec describes the surfaces in prose and ASCII (§5, §7, §8); two directories render them. Read both before building or changing a panel, a component, or anything the user sees.
+The spec describes the surfaces in prose and ASCII (§5, §7, §8); `docs/design/` renders them. Read it before building or changing a panel, a component, or anything the user sees.
 
 - **`docs/design/`** — the design system of record. `readme.md` is the voice-and-visuals brief: dark-only near-black ladder, one cyan accent, status colors always paired with a glyph, IBM Plex Sans for chrome and JetBrains Mono for every identifier, sentence case, verb-first actions, no emoji. `tokens/` holds the CSS variables, `components/` ships each primitive as `.jsx` + `.d.ts` + a `.prompt.md` stating its rules, `ui_kits/dcc-app/index.html` is a click-through recreation, and `SKILL.md` is the entry point when it's loaded as a skill.
-- **`docs/mockups/`** — hi-fi mockups of four surfaces (Checkout Service · Deploys, Logs · checkout · qa, Knowledge graph, Settings) plus the left rail in `DCCRail.dc.html`. Open the `.dc.html` files in a browser; they need `support.js` and `_ds/` alongside them.
+- **`docs/design/mockups/`** — hi-fi mockups of four surfaces (Checkout Service · Deploys, Logs · checkout · qa, Knowledge graph, Settings), bundled into a single `index.html`, plus the left rail in `DCCRail.dc.html`. Mockups now live nested under `docs/design/` rather than as a sibling directory, so they reference the design system directly one level up (`../tokens/*.css`, `../styles.css`, `../_ds_bundle.js`) instead of carrying their own copy. Serve over HTTP from `docs/design/` — `file://` breaks the rail's `fetch()` import, and serving from `mockups/` itself 404s the `../` refs; see `docs/design/mockups/README.md` for exact commands.
 
 The mockups are assembled from design-system components (`<x-import component-from-global-scope="DCCDesignSystem_28b72e.Panel" …>`), so a mockup names the primitives a surface needs rather than drawing it freehand. Build the primitive from its `.prompt.md`, then compose it the way the mockup does.
 
 They encode the invariants, too, so match the behavior and not only the pixels: every panel header carries its data age ("as of 12s ago", "live"), identifiers render as their URIs (`deploy://qa/checkout`, `pod://qa/checkout/checkout-6df4cbf8b`), and a Grafana 401 is an `ErrorCard` that names the env var to fix and says which panels go stale until it is.
 
 `docs/ARCHITECTURE.md` still outranks both. A mockup showing something the spec does not define is a decision — write the ADR, don't quietly implement it.
-
-`docs/mockups/_ds/` is a copy of the design system bundled by the export so the files render standalone. The token values match `docs/design/`, but it's minified and its `readme.md` predates the spec rename. Read `docs/design/`; edit neither copy.
 
 ## Architecture
 
@@ -89,4 +87,4 @@ Every `package.json` server script routes through `bin/dcc.mjs` so the host guar
 
 ## Vendored directories
 
-`docs/ARCHITECTURE.md`, `docs/design/`, and `docs/mockups/` are prettier-ignored; `docs/design/` and `docs/mockups/` are also eslint-ignored. Both are exports owned by the kit that generated them — reformatting makes the next re-export a needlessly large diff, and the bundled runtimes (`support.js`, `_ds_bundle.js`) are not app source. Never run a formatter over them.
+`docs/ARCHITECTURE.md` and `docs/design/` (which includes `mockups/`, nested inside it) are prettier-ignored; `docs/design/` is also eslint-ignored. Both are exports owned by the kit that generated them — reformatting makes the next re-export a needlessly large diff, and the bundled runtimes (`support.js`, `_ds_bundle.js`) are not app source. Never run a formatter over them.
