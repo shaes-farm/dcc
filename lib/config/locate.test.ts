@@ -68,4 +68,22 @@ describe("locateJsonPath", () => {
   it("returns the document start for an empty path", () => {
     expect(locateJsonPath(RAW, [])).toEqual({ line: 1, column: 1 });
   });
+
+  it("locates the last occurrence of a duplicate key, matching JSON.parse", () => {
+    const raw = '{ "id": "checkout", "repository": "a", "repository": "b" }';
+
+    const position = locateJsonPath(raw, ["repository"]);
+
+    expect(position).toBeDefined();
+    expect(valueAt(raw, position!, 3)).toBe('"b"');
+  });
+
+  it("locates a key containing a JSON escape sequence", () => {
+    const raw = '{ "services": { "qa\\"prod": "value" } }';
+
+    const position = locateJsonPath(raw, ["services", 'qa"prod']);
+
+    expect(position).toBeDefined();
+    expect(valueAt(raw, position!, 7)).toBe('"value"');
+  });
 });

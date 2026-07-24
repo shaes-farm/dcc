@@ -97,21 +97,29 @@ function descend(
 
   if (typeof head === "string" && char === "{") {
     i = skipWhitespace(raw, i + 1);
+    // Scans every key rather than returning on the first match, and keeps the
+    // *last* one — mirroring `JSON.parse`'s last-key-wins handling of
+    // duplicate keys, so a repeated key locates the same occurrence the
+    // parsed value actually came from.
+    let match: number | undefined;
     while (raw[i] !== "}") {
-      const keyStart = i + 1; // past the opening quote
-      const keyEnd = skipString(raw, i) - 1; // before the closing quote
-      const key = raw.slice(keyStart, keyEnd);
+      const keyTextEnd = skipString(raw, i); // past the closing quote
+      // `raw.slice` still holds the quotes, so this is a JSON string literal
+      // on its own — parsing it (rather than slicing between the quotes)
+      // decodes escape sequences the same way the initial `JSON.parse` of
+      // the whole document did, so `key` compares correctly against `head`.
+      const key = JSON.parse(raw.slice(i, keyTextEnd)) as string;
 
-      i = skipWhitespace(raw, keyEnd + 1);
+      i = skipWhitespace(raw, keyTextEnd);
       i++; // ':'
       i = skipWhitespace(raw, i);
 
-      if (key === head) return descend(raw, i, rest);
+      if (key === head) match = i;
 
       i = skipWhitespace(raw, skipValue(raw, i));
       if (raw[i] === ",") i = skipWhitespace(raw, i + 1);
     }
-    return undefined;
+    return match === undefined ? undefined : descend(raw, match, rest);
   }
 
   if (typeof head === "number" && char === "[") {
