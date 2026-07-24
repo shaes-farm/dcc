@@ -14,3 +14,6 @@ docs/ARCHITECTURE.md
 # Vendored design-system export — owned by the design kit that generated it,
 # not authored here. Reformatting it would make the next re-export a huge diff.
 docs/design/
+
+# Claude Code project config — assistant instructions/skills, not app source.
+.claude/
