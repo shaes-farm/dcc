@@ -2,28 +2,33 @@ import type { Uri } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
 /**
- * A resource URI, rendered (spec §3.2).
+ * A resource URI, rendered (spec §3.2,
+ * `docs/design/components/status/UriChip.prompt.md`).
  *
- * Monospace, with the scheme in the accent colour — the design system's
- * `UriChip` (docs/design/components/status/UriChip.d.ts). This is the plain
- * version: the theme tokens it wants land with the left rail and dark theme
- * (https://github.com/shaes-farm/dcc/issues/15), which is also when this
- * should pick up the kit's exact treatment rather than approximate it twice.
+ * Monospace, scheme in the accent color, everywhere an object reference is
+ * shown — Context panel rows, lineage nodes, correlation threads, rail rows.
+ * §3.2's rule is that everything rendered carries its URI, so this is the
+ * shape that rule takes on screen.
+ *
+ * Copying and navigation deliberately do not live here: `Addressable` already
+ * owns right-click → Copy link, ⌘-click, and the keyboard path for *any*
+ * child, so a chip that also knew how to copy itself would be a second
+ * implementation of the same §3.2 promise. Wrap this in `Addressable` instead.
  */
 export function UriChip({ uri, className }: { uri: Uri; className?: string }) {
   const separator = uri.indexOf("://");
   const scheme = uri.slice(0, separator);
-  const body = uri.slice(separator);
+  const rest = uri.slice(separator);
 
   return (
     <span
       className={cn(
-        "inline-flex max-w-full items-baseline gap-px truncate rounded border border-border bg-muted/40 px-1.5 py-0.5 font-mono text-xs",
+        "border-hairline bg-raised text-label hover:border-hairline-strong hover:bg-inset inline-flex h-5 max-w-full items-center overflow-hidden rounded-sm border px-1.75 font-mono text-xs whitespace-nowrap transition-colors",
         className,
       )}
     >
-      <span className="text-primary">{scheme}</span>
-      <span className="text-muted-foreground">{body}</span>
+      <span className="text-accent-strong">{scheme}</span>
+      <span className="truncate">{rest}</span>
     </span>
   );
 }
