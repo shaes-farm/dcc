@@ -1,55 +1,51 @@
+"use client";
+
+import { useEffect } from "react";
+
+import { SlotGrid } from "@/components/panels/slot-grid";
 import { Addressable } from "@/components/uri/addressable";
 import { UriChip } from "@/components/uri/uri-chip";
 import type { Resolution } from "@/lib/routing";
+import { useUiStore } from "@/lib/stores/ui";
 
 /**
- * What a URI resolved to — a placeholder for the panel itself.
+ * What a URI resolved to — the slot engine's grid for `kind: "panel"`.
  *
- * The slot engine (https://github.com/shaes-farm/dcc/issues/12) mounts the
- * real panel here, and the cockpit (#13) fills the first one. Until then this
- * shows the resolution rather than a blank page, which is what makes the
- * routing layer testable by hand: paste a URI, see which panel it opens and
- * with what parameters.
+ * A deep link opens its object into the grid's primary slot rather than
+ * replacing the whole layout, so split/resize/swap/maximize survive
+ * navigating between objects. `action://` URIs never mount a panel (§7.1) —
+ * that case keeps the resolution-dump view a panel grid has no use for.
  */
 export function ResolutionView({ resolution }: { resolution: Resolution }) {
+  const seedPrimarySlot = useUiStore((state) => state.seedPrimarySlot);
+
+  useEffect(() => {
+    if (resolution.kind === "panel") seedPrimarySlot(resolution.uri);
+  }, [resolution, seedPrimarySlot]);
+
+  if (resolution.kind === "panel") return <SlotGrid />;
+
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-16">
       <div className="flex flex-col gap-2">
         <span className="text-xs tracking-wide text-muted-foreground uppercase">
-          {resolution.kind === "panel" ? "Panel" : "Action"}
+          Action
         </span>
         <Addressable uri={resolution.uri}>
           <UriChip uri={resolution.uri} />
         </Addressable>
       </div>
 
-      {resolution.kind === "panel" ? (
-        <Rows
-          rows={[
-            ["panel", resolution.panel],
-            ...Object.entries(resolution.params)
-              .filter(([key]) => key !== "scheme")
-              .map(([key, value]): [string, string] => [key, String(value)]),
-          ]}
-        />
-      ) : (
-        <>
-          <Rows
-            rows={[
-              ["action", resolution.actionId],
-              ["target", resolution.target],
-            ]}
-          />
-          <p className="max-w-prose text-sm text-muted-foreground">
-            Actions open a confirmation dialog, never a view — nothing runs
-            straight off a link (§7.1).
-          </p>
-        </>
-      )}
+      <Rows
+        rows={[
+          ["action", resolution.actionId],
+          ["target", resolution.target],
+        ]}
+      />
 
       <p className="max-w-prose text-sm text-muted-foreground">
-        The panel itself arrives with the slot engine. This page is the routing
-        layer showing its work.
+        Actions open a confirmation dialog, never a view — nothing runs straight
+        off a link (§7.1).
       </p>
     </main>
   );
