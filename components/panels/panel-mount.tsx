@@ -20,10 +20,11 @@ export function PanelMount({
 }) {
   const resolution = resolveUri(uri);
 
-  // §7.1: actions open a confirmation dialog, never a panel — a slot never
-  // holds one. Nothing routes an `action://` URI into a slot today, but the
-  // check keeps this total rather than trusting every future caller to know
-  // that.
+  // §7.1: actions open a confirmation dialog, never a panel. `Slot` catches
+  // this first, because "no panel" still has to be a pane with a header and a
+  // way out; the check stays here so the answer to "what panel does an
+  // `action://` URI mount?" is "none" at the place that mounts panels, and not
+  // a caller's to remember.
   if (resolution.kind === "action") return null;
 
   const Component = PANEL_REGISTRY[resolution.panel] ?? UnimplementedPanel;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ArrowLeftRight,
   Maximize2,
@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ds/empty-state";
 import { Panel } from "@/components/ds/panel";
 import { Button } from "@/components/ui/button";
 import { formatUri, safeParseUri, type Uri } from "@/lib/domain";
+import { resolveUri } from "@/lib/routing";
 import { listSlots, useUiStore, type SlotId } from "@/lib/stores/ui";
 
 import { PanelMount } from "./panel-mount";
@@ -101,16 +102,56 @@ export function Slot({ id, uri }: { id: SlotId; uri: Uri | null }) {
 
   if (uri === null) {
     return (
-      <Panel title="Empty slot" actions={actions}>
-        <EmptyState
-          message="Nothing open here yet"
-          action={<JumpToSlot id={id} />}
-        />
-      </Panel>
+      <SlotFrame>
+        <Panel title="Empty slot" actions={actions}>
+          <EmptyState
+            message="Nothing open here yet"
+            action={<JumpToSlot id={id} />}
+          />
+        </Panel>
+      </SlotFrame>
     );
   }
 
-  return <PanelMount uri={uri} actions={actions} />;
+  // §7.1: an action opens a confirmation dialog, never a panel. A slot can
+  // still be pointed at one — the Open field below takes any URI — and
+  // `PanelMount` answers that with no panel at all, which as a whole pane is a
+  // blank box with no header and no way back out of it.
+  if (resolveUri(uri).kind === "action") {
+    return (
+      <SlotFrame>
+        <Panel title="Action" actions={actions}>
+          <EmptyState
+            message={`${uri} is an action — those are confirmed in a dialog, never opened in a slot`}
+            action={<JumpToSlot id={id} />}
+          />
+        </Panel>
+      </SlotFrame>
+    );
+  }
+
+  return (
+    <SlotFrame>
+      <PanelMount uri={uri} actions={actions} />
+    </SlotFrame>
+  );
+}
+
+/**
+ * The pane box a slot renders into, whatever is inside it.
+ *
+ * The design system's `Panel` is content-height by default, and the mockups opt
+ * into filling per panel (`style="flex:1 1 auto;min-height:0"`). A slot always
+ * fills its pane, so the slot is where that is said once — otherwise enlarging
+ * a pane grows empty space below a short panel, and every panel added later has
+ * to remember a rule that is not its own.
+ */
+function SlotFrame({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col *:min-h-0 *:flex-1">
+      {children}
+    </div>
+  );
 }
 
 /** Fills an empty slot from a pasted URI — the slot-local version of `JumpToUri`. */

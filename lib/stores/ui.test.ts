@@ -59,6 +59,22 @@ describe("splitSlot", () => {
       expect.arrayContaining(["prs", "environments", "security"]),
     );
   });
+
+  it("leaves maximized mode when the maximized slot is the one split", () => {
+    useUiStore.getState().toggleMaximized("repos");
+    useUiStore.getState().splitSlot("repos", "vertical");
+
+    // Otherwise the grid keeps rendering "repos" alone and the new sibling is
+    // never visible.
+    expect(useUiStore.getState().maximizedSlotId).toBeNull();
+  });
+
+  it("keeps maximized mode when some other slot is split", () => {
+    useUiStore.getState().toggleMaximized("prs");
+    useUiStore.getState().splitSlot("repos", "vertical");
+
+    expect(useUiStore.getState().maximizedSlotId).toBe("prs");
+  });
 });
 
 describe("swapSlots", () => {
@@ -116,6 +132,25 @@ describe("seedPrimarySlot", () => {
     const primary = listSlots(useUiStore.getState().layout)[0];
     expect(primary.id).toBe("repos");
     expect(primary.uri).toBe(uri);
+  });
+
+  it("points the maximized slot at it instead, when one is maximized", () => {
+    const uri = toUri("service://checkout");
+    useUiStore.getState().toggleMaximized("security");
+    useUiStore.getState().seedPrimarySlot(uri);
+
+    const slots = listSlots(useUiStore.getState().layout);
+    expect(slots.find((slot) => slot.id === "security")?.uri).toBe(uri);
+    // The first slot is not the visible one here, so it keeps what it had.
+    expect(slots[0].uri).toBe(toUri("repo://github/acme/checkout-svc"));
+  });
+
+  it("falls back to the first slot when the maximized id names no slot", () => {
+    const uri = toUri("service://checkout");
+    useUiStore.setState({ maximizedSlotId: "gone" });
+    useUiStore.getState().seedPrimarySlot(uri);
+
+    expect(listSlots(useUiStore.getState().layout)[0].uri).toBe(uri);
   });
 
   it("leaves the layout untouched when the primary slot already shows that uri", () => {

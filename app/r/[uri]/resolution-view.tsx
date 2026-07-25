@@ -1,12 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 
 import { SlotGrid } from "@/components/panels/slot-grid";
 import { Addressable } from "@/components/uri/addressable";
 import { UriChip } from "@/components/uri/uri-chip";
 import type { Resolution } from "@/lib/routing";
 import { useUiStore } from "@/lib/stores/ui";
+
+/**
+ * Commits the seed below before the browser paints, so navigating between
+ * objects does not show a frame of whatever the primary slot held before. A
+ * plain effect on the server, only because React warns about a layout effect it
+ * cannot run there — the seed is a browser-side concern either way.
+ */
+const useSeedEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /**
  * What a URI resolved to — the slot engine's grid for `kind: "panel"`.
@@ -19,7 +28,7 @@ import { useUiStore } from "@/lib/stores/ui";
 export function ResolutionView({ resolution }: { resolution: Resolution }) {
   const seedPrimarySlot = useUiStore((state) => state.seedPrimarySlot);
 
-  useEffect(() => {
+  useSeedEffect(() => {
     if (resolution.kind === "panel") seedPrimarySlot(resolution.uri);
   }, [resolution, seedPrimarySlot]);
 

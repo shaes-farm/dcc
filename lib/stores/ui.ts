@@ -19,7 +19,7 @@ interface UiState {
   maximizedSlotId: SlotId | null;
   /** Points an existing slot at a different object. */
   setSlotUri: (slotId: SlotId, uri: Uri | null) => void;
-  /** Points the first slot (document order) at `uri` — what a deep link opens into. */
+  /** Points the visible primary slot at `uri` — what a deep link opens into. */
   seedPrimarySlot: (uri: Uri) => void;
   /** Turns a slot into two: itself, plus a new empty sibling. */
   splitSlot: (slotId: SlotId, orientation: SplitOrientation) => void;
@@ -155,9 +155,17 @@ export const useUiStore = create<UiState>((set) => ({
       ),
     })),
 
+  /**
+   * The primary slot is whichever one the deep-linked object will actually be
+   * seen in: the maximized slot when there is one, and the first slot in
+   * document order otherwise. Seeding the first slot unconditionally drops the
+   * link on the floor whenever some other slot is filling the grid.
+   */
   seedPrimarySlot: (uri) =>
     set((state) => {
-      const primary = listSlots(state.layout)[0];
+      const slots = listSlots(state.layout);
+      const primary =
+        slots.find((slot) => slot.id === state.maximizedSlotId) ?? slots[0];
       if (!primary || primary.uri === uri) return state;
       return {
         layout: updateNode(state.layout, primary.id, (node) =>
@@ -168,6 +176,12 @@ export const useUiStore = create<UiState>((set) => ({
 
   splitSlot: (slotId, orientation) =>
     set((state) => ({
+      // Splitting the maximized slot leaves maximized mode. The slot keeps its
+      // id, so the grid would go on rendering that one leaf and the new sibling
+      // would never appear — a dead-looking button that quietly accumulates
+      // hidden slots on every click.
+      maximizedSlotId:
+        state.maximizedSlotId === slotId ? null : state.maximizedSlotId,
       layout: updateNode(state.layout, slotId, (node) => {
         if (node.type !== "slot") return node;
         return {
