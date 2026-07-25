@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 import { ConfigRepairScreen } from "@/components/config/config-repair-screen";
+import { AppShell } from "@/components/shell/app-shell";
 import { safeLoadConfig } from "@/lib/config/load";
 
 import { Providers } from "./providers";
@@ -26,10 +27,16 @@ export default function RootLayout({
   const config = safeLoadConfig();
 
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">
+    // `dark` is permanent, not a toggle: v1 is dark-only (§8) and there is no
+    // light palette to switch to. It stays because shadcn's primitives ship
+    // real `dark:` utilities that would otherwise never apply — see
+    // app/globals.css and docs/adr/adr-0004.md.
+    <html lang="en" className="dark h-full antialiased">
+      <body className="flex h-full flex-col overflow-hidden">
         {config.ok ? (
-          <Providers>{children}</Providers>
+          <Providers>
+            <AppShell config={config.value}>{children}</AppShell>
+          </Providers>
         ) : (
           <ConfigRepairScreen error={config.error} />
         )}

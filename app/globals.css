@@ -1,21 +1,126 @@
+/* Self-hosted fonts (§8, §10.1). The `wght` entry point is the weight axis
+   only — no width axis, no italics, none of which the design system uses.
+   Each entry ships every unicode subset behind a `unicode-range`, so the
+   browser fetches latin and nothing else.
+
+   This is the one file in `docs/design/tokens/` deliberately NOT adopted:
+   `fonts.css` there `@import`s fonts.googleapis.com, and §10.1 allows no
+   external requests. See docs/adr/adr-0004.md. */
+@import "@fontsource-variable/ibm-plex-sans/wght.css";
+@import "@fontsource-variable/jetbrains-mono/wght.css";
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Dark-only (§8), so this never selects a light branch — but shadcn's own
+   primitives ship real `dark:` utilities (see components/ui/button.tsx), and
+   `app/layout.tsx` keeps `class="dark"` on <html> permanently so those
+   branches resolve. There is no light theme to toggle to. */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  /* System stacks — DCC makes no external font requests (§10.1). The §8
-     typography (JetBrains Mono + a grotesque) is self-hosted in #15. */
+
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+    "IBM Plex Sans Variable", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono:
-    ui-monospace, "JetBrains Mono", "SFMono-Regular", "Cascadia Mono", Menlo,
-    Consolas, monospace;
+    "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", "Cascadia Mono",
+    Menlo, Consolas, monospace;
   --font-heading: var(--font-sans);
+
+  /* ── The §8 ladder, as utilities ──────────────────────────────────────
+     Surfaces: `bg-app` `bg-panel` `bg-raised` `bg-inset`. Depth in DCC is a
+     background step plus a hairline, never a shadow (shadows are for overlays
+     only), so these four plus `border-hairline` are the whole vocabulary. */
+  --color-app: var(--bg-0);
+  --color-panel: var(--bg-1);
+  --color-raised: var(--bg-2);
+  --color-inset: var(--bg-3);
+
+  --color-hairline: var(--border-1);
+  --color-hairline-strong: var(--border-2);
+
+  /* Text: `text-body` `text-label` `text-faint`. Named for their role rather
+     than their step, so a row that wants secondary text says so. */
+  --color-body: var(--text-1);
+  --color-label: var(--text-2);
+  --color-faint: var(--text-3);
+
+  /* The one accent. `--color-accent` is bound to the *dim* tint, not the pure
+     cyan, on purpose: shadcn's primitives spend `bg-accent` on hover/focus
+     surfaces (`focus:bg-accent` in components/ui/context-menu.tsx), and in
+     this design system that surface is the cyan selection tint — the same
+     treatment the rail's active row uses. Reach for `text-accent-strong` or
+     `bg-accent-strong` when you want the saturated cyan itself. */
+  --color-accent: var(--accent-dim);
+  --color-accent-foreground: var(--text-1);
+  --color-accent-strong: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-press: var(--accent-press);
+  --color-accent-fg: var(--accent-fg);
+
+  /* Status — the only saturated colors on screen (§8). Never used without a
+     glyph beside them; see components/ds/status-visuals.ts. */
+  --color-status-healthy: var(--status-healthy);
+  --color-status-degraded: var(--status-degraded);
+  --color-status-failing: var(--status-failing);
+  --color-status-deploying: var(--status-deploying);
+  --color-status-unknown: var(--status-unknown);
+  --color-status-healthy-dim: var(--status-healthy-dim);
+  --color-status-degraded-dim: var(--status-degraded-dim);
+  --color-status-failing-dim: var(--status-failing-dim);
+  --color-status-deploying-dim: var(--status-deploying-dim);
+  --color-status-unknown-dim: var(--status-unknown-dim);
+
+  /* Restrained syntax palette for logs and JSON (§8). */
+  --color-syn-key: var(--syn-key);
+  --color-syn-string: var(--syn-string);
+  --color-syn-number: var(--syn-number);
+  --color-syn-comment: var(--syn-comment);
+
+  /* Dense-but-calm type scale; base UI is 13px, not Tailwind's 16px. This
+     deliberately re-points `text-sm`/`text-base`/… for the whole app, shadcn
+     primitives included. */
+  --text-2xs: 10px;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 13px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 28px;
+
+  --leading-normal: 1.45;
+  --leading-log: 1.7;
+  --tracking-overline: 0.08em;
+
+  /* Fixed chrome, as `w-rail` / `h-statusbar` / `h-panel-header`. */
+  --spacing-rail: 240px;
+  --spacing-drawer: 420px;
+  --spacing-statusbar: 28px;
+  --spacing-panel-header: 34px;
+  --spacing-control: 28px;
+  --spacing-control-lg: 34px;
+
+  --shadow-overlay: var(--shadow-overlay-value);
+  --shadow-drawer: var(--shadow-drawer-value);
+
+  /* Motion is state-change only (§8) — no shimmer, no spinners. */
+  --animate-status-pulse: dcc-status-pulse 1.6s ease-in-out infinite;
+
+  @keyframes dcc-status-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -33,8 +138,6 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -54,73 +157,113 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * The §8 design tokens, copied from docs/design/tokens/{colors,typography,
+ * spacing,effects}.css.
+ *
+ * Copied rather than `@import`ed across the repo on purpose: `docs/design/` is
+ * a vendored export owned by the kit that generated it — prettier-ignored,
+ * eslint-ignored, and replaced wholesale on the next re-export — so the app
+ * must not build from it. Changing a value here without changing it there is
+ * a drift bug; the kit is the source of truth for what the values *are*.
+ *
+ * Dark-only (§8): there is one palette, in `:root`, and no `.dark` override
+ * block. See docs/adr/adr-0004.md.
+ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
+  /* Background ladder — near-black, never pure #000. Depth = step up + hairline. */
+  --bg-0: #0a0d12; /* app canvas */
+  --bg-1: #0f141b; /* panels, rail */
+  --bg-2: #151c25; /* raised rows, table headers, hover on bg-1 */
+  --bg-3: #1c2530; /* inputs, hover on bg-2, active rows */
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --border-1: #1e2733;
+  --border-2: #2c3949;
+
+  --text-1: #dee5ee; /* primary */
+  --text-2: #93a1b4; /* secondary */
+  --text-3: #5d6c81; /* muted, timestamps, placeholders */
+
+  /* The one accent (interactive, focus, selection, links) */
+  --accent: #34c6ec;
+  --accent-hover: #5ad3f2;
+  --accent-press: #22a9cc;
+  --accent-fg: #04222c; /* text on accent fill */
+  --accent-dim: rgba(52, 198, 236, 0.14);
+
+  /* Status vocabulary: healthy | degraded | failing | deploying | unknown */
+  --status-healthy: #3fb950;
+  --status-degraded: #d9a118;
+  --status-failing: #f85149;
+  --status-deploying: #5b7fff;
+  --status-unknown: #7d8896;
+  --status-healthy-dim: rgba(63, 185, 80, 0.14);
+  --status-degraded-dim: rgba(217, 161, 24, 0.14);
+  --status-failing-dim: rgba(248, 81, 73, 0.14);
+  --status-deploying-dim: rgba(91, 127, 255, 0.14);
+  --status-unknown-dim: rgba(125, 136, 150, 0.14);
+
+  /* Restrained syntax palette for logs/JSON */
+  --syn-key: #7eb6e8;
+  --syn-string: #9ece8c;
+  --syn-number: #d2a8ff;
+  --syn-comment: #5d6c81;
+
+  --scrim: rgba(4, 7, 10, 0.6);
+
+  /* Depth is background-step + hairline; shadows only on overlays. Suffixed
+     `-value` because `--shadow-overlay` itself is a Tailwind theme key above,
+     and a theme key that referenced its own name would not resolve. */
+  --shadow-overlay-value:
+    0 12px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-drawer-value: -8px 0 24px rgba(0, 0, 0, 0.45);
+  --focus-ring: 0 0 0 2px rgba(52, 198, 236, 0.4);
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur-med: 160ms;
+
+  /*
+   * shadcn's semantic names, aliased onto the ladder above.
+   *
+   * These are not a second palette — every one resolves to a token. They stay
+   * as raw custom properties (rather than living only in `@theme`) because
+   * components/ui/button.tsx reads `var(--secondary)` and `var(--foreground)`
+   * directly inside arbitrary values, where a Tailwind theme key would not
+   * reach.
+   */
+  --background: var(--bg-0);
+  --foreground: var(--text-1);
+  --card: var(--bg-1);
+  --card-foreground: var(--text-1);
+  --popover: var(--bg-2);
+  --popover-foreground: var(--text-1);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-fg);
+  --secondary: var(--bg-2);
+  --secondary-foreground: var(--text-1);
+  --muted: var(--bg-2);
+  --muted-foreground: var(--text-2);
+  --destructive: var(--status-failing);
+  --border: var(--border-1);
+  --input: var(--bg-3);
+  --ring: var(--accent);
+  --chart-1: var(--accent);
+  --chart-2: var(--status-healthy);
+  --chart-3: var(--status-degraded);
+  --chart-4: var(--status-failing);
+  --chart-5: var(--status-deploying);
+  /* DS radii: 4px controls/tags, 6px panels/cards, 8px dialogs/drawers. The
+     calc chain above lands on 3.6 / 4.8 / 6 / 8.4 for sm/md/lg/xl. */
+  --radius: 6px;
+  --sidebar: var(--bg-1);
+  --sidebar-foreground: var(--text-1);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: var(--accent-fg);
+  --sidebar-accent: var(--accent-dim);
+  --sidebar-accent-foreground: var(--text-1);
+  --sidebar-border: var(--border-1);
+  --sidebar-ring: var(--accent);
 }
 
 @layer base {
@@ -128,9 +271,14 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground text-base leading-normal;
   }
   html {
     @apply font-sans;
+  }
+  code,
+  pre,
+  kbd {
+    @apply font-mono;
   }
 }

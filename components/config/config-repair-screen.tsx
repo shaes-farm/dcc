@@ -20,7 +20,7 @@ import type { ConfigIssue, ConfigLoadError } from "@/lib/config/load";
  */
 export function ConfigRepairScreen({ error }: { error: ConfigLoadError }) {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-start gap-4 p-16">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-start gap-4 overflow-auto p-16">
       <div className="flex items-center gap-2 text-destructive">
         <span aria-hidden="true">⛔</span>
         <h1 className="font-heading text-xl font-semibold tracking-tight">
