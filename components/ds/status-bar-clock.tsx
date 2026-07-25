@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
  * A client component with a deliberately empty first render: the server has no
  * idea what time it is where the browser is, so rendering a time on the server
  * would either mismatch on hydration or freeze at build time and quietly lie.
- * It fills in on mount and ticks each minute.
+ * It fills in on mount and ticks every 30 seconds.
  */
 export function StatusBarClock() {
   const [now, setNow] = useState<string>();

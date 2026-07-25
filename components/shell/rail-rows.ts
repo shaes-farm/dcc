@@ -31,7 +31,7 @@ export interface ServiceRailRow {
 export function serviceRailRows(config: DccConfig): ServiceRailRow[] {
   return (config.services ?? []).map((service) => ({
     uri: formatUri({ scheme: "service", service: service.id }),
-    label: service.name ?? service.id,
+    label: service.name || service.id,
     status: "unknown",
   }));
 }
