@@ -15,10 +15,12 @@ Numbering is sequential and permanent. An ADR is never deleted or rewritten; a
 decision that no longer holds gets a new ADR, and the old one's status becomes
 `superseded by ADR-NNNN`.
 
-| ADR                 | Title                                                   | Date       | Status   | Summary                                                                                          |
-| ------------------- | ------------------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------ |
-| [0000](adr-0000.md) | Template                                                | —          | —        | The shape of an ADR. Not a decision.                                                             |
-| [0001](adr-0001.md) | Trace viewer joins the §5.3 panel library               | 2026-07-22 | accepted | §3.2 defines `trace://` but §5.3 listed no panel to resolve it to; adds `trace-viewer`.          |
-| [0002](adr-0002.md) | Provider methods return domain types                    | 2026-07-23 | accepted | §2.2's `EnvSummary`/`Deploy`/`ArtifactRef`/… map onto `lib/domain` types; #5 owns only payloads. |
-| [0003](adr-0003.md) | Config JSON Schema via Zod 4 native `z.toJSONSchema`    | 2026-07-23 | accepted | §9/#6 named `zod-to-json-schema`; Zod 4 absorbed it into core, so the package is dropped.        |
-| [0004](adr-0004.md) | §8 token ladder is the theme; shadcn vars alias onto it | 2026-07-24 | accepted | §9 picks shadcn, §8 wants dark-only near-black; one palette, no light theme, fonts self-hosted.  |
+| ADR                 | Title                                                              | Date       | Status   | Summary                                                                                                |
+| ------------------- | ------------------------------------------------------------------ | ---------- | -------- | ------------------------------------------------------------------------------------------------------ |
+| [0000](adr-0000.md) | Template                                                           | —          | —        | The shape of an ADR. Not a decision.                                                                   |
+| [0001](adr-0001.md) | Trace viewer joins the §5.3 panel library                          | 2026-07-22 | accepted | §3.2 defines `trace://` but §5.3 listed no panel to resolve it to; adds `trace-viewer`.                |
+| [0002](adr-0002.md) | Provider methods return domain types                               | 2026-07-23 | accepted | §2.2's `EnvSummary`/`Deploy`/`ArtifactRef`/… map onto `lib/domain` types; #5 owns only payloads.       |
+| [0003](adr-0003.md) | Config JSON Schema via Zod 4 native `z.toJSONSchema`               | 2026-07-23 | accepted | §9/#6 named `zod-to-json-schema`; Zod 4 absorbed it into core, so the package is dropped.              |
+| [0004](adr-0004.md) | §8 token ladder is the theme; shadcn vars alias onto it            | 2026-07-24 | accepted | §9 picks shadcn, §8 wants dark-only near-black; one palette, no light theme, fonts self-hosted.        |
+| [0005](adr-0005.md) | GitHub adapter talks over plain `fetch`, with conditional requests | 2026-07-25 | accepted | §9 names no HTTP client; a hand-rolled client owns ETags, pagination and §2's rate-limit choke point.  |
+| [0006](adr-0006.md) | `alert://` ids are repo-qualified                                  | 2026-07-25 | accepted | §3.2's `alert://github/codeql/1234` collides across repos; the id segment becomes `owner/repo/number`. |

@@ -21,7 +21,7 @@ const loadFixture = fixtureSuccess<EnvironmentsFixture>({
   asOf: "15s ago",
 });
 
-/** Fixture stand-in for the `environments` panel — real data lands with #11. */
+/** Fixture stand-in for the `environments` panel — real data lands with #10's `DeploymentProvider`. */
 export function EnvironmentsPanel({ params, actions }: PanelComponentProps) {
   const state = useFixtureData(loadFixture);
   if (params.scheme !== "env") return null;
