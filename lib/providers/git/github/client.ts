@@ -200,15 +200,39 @@ export class GitHubClient {
    * recovers and one that hammers the limit it just hit.
    */
   private async send(url: string, init: RequestInit): Promise<Response> {
-    const response = await this.fetchImpl(url, init);
+    const response = await this.dispatch(url, init);
     const retryAfterMs = retryAfter(response);
 
     if (retryAfterMs !== undefined && retryAfterMs <= MAX_RETRY_AFTER_MS) {
       await sleep(retryAfterMs);
-      return this.fetchImpl(url, init);
+      return this.dispatch(url, init);
     }
 
     return response;
+  }
+
+  /**
+   * One `fetch`, with transport failure turned into a `GitHubError`.
+   *
+   * `fetch` rejects rather than resolving when the request never reaches the
+   * host — no network, DNS failure, TLS rejection, connection reset. Left
+   * alone that surfaces as a bare `TypeError` ("fetch failed"), which is not a
+   * `GitHubError`, so the route handler falls through to its generic 500 and
+   * the panel renders "check the server log" — the exact non-actionable card
+   * §4.3 rules out. Every other failure here names what to change, and losing
+   * the network is the one an on-call engineer is most likely to hit.
+   */
+  private async dispatch(url: string, init: RequestInit): Promise<Response> {
+    try {
+      return await this.fetchImpl(url, init);
+    } catch (cause) {
+      throw new GitHubError(
+        `Cannot reach ${new URL(url).host} — DCC has no network connection, or DNS is failing. Check your connection; the git panels recover on the next poll.`,
+        // 503, not 502: nothing upstream answered, so there is no bad gateway
+        // response to report — the request never left this machine.
+        { status: 503, cause },
+      );
+    }
   }
 
   private headers(): Record<string, string> {

@@ -235,6 +235,40 @@ describe("GitHubClient — error messages name the fix (§4.3)", () => {
     expect((error as GitHubError).status).toBe(502);
   });
 
+  it("turns a transport failure into an actionable card, not a bare TypeError", async () => {
+    // `fetch` rejects rather than resolving when the request never reaches the
+    // host. Verified against a real network cut: without this, the route
+    // handler falls through to a generic 500 and the panel says "check the
+    // server log", which is the non-actionable card §4.3 rules out.
+    const fetchImpl = () => Promise.reject(new TypeError("fetch failed"));
+    const github = new GitHubClient({
+      credential: CREDENTIAL,
+      fetch: fetchImpl,
+    });
+
+    const error = await github.rest("/repos/acme/x").catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(GitHubError);
+    expect((error as GitHubError).status).toBe(503);
+    expect((error as GitHubError).message).toContain("api.github.com");
+    expect((error as GitHubError).message).toContain("network connection");
+    // The original failure is preserved for the server log.
+    expect((error as GitHubError).cause).toBeInstanceOf(TypeError);
+  });
+
+  it("reports a transport failure on the GraphQL path too", async () => {
+    const fetchImpl = () => Promise.reject(new Error("ECONNRESET"));
+    const github = new GitHubClient({
+      credential: CREDENTIAL,
+      fetch: fetchImpl,
+    });
+
+    const error = await github.graphql("query {}").catch((e: unknown) => e);
+
+    expect((error as GitHubError).status).toBe(503);
+    expect((error as GitHubError).message).toContain("Cannot reach");
+  });
+
   it("never leaks the token into an error", async () => {
     const { github } = client([json({ message: "nope" }, { status: 422 })]);
 
