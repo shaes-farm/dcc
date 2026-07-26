@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import {
   afterEach,
   beforeAll,
@@ -14,6 +14,12 @@ import {
 import { toUri } from "@/lib/domain";
 import { listSlots, useUiStore } from "@/lib/stores/ui";
 
+import {
+  CHECKOUT_PR,
+  CHECKOUT_REPO,
+  renderWithQuery,
+  stubFetch,
+} from "./panel-test-utils";
 import { SlotGrid } from "./slot-grid";
 
 /** See `panel-mount.test.tsx` — a loaded panel reaches for the App Router. */
@@ -38,13 +44,22 @@ const INITIAL_STATE = useUiStore.getState();
 
 beforeEach(() => {
   useUiStore.setState(INITIAL_STATE, true);
+  // The default layout seeds git panels, which now read `/api/git/*`.
+  stubFetch([
+    { match: "/api/git/repos", body: [CHECKOUT_REPO] },
+    { match: "/api/git/prs", body: [CHECKOUT_PR] },
+    { match: "/api/git/alerts", body: [] },
+  ]);
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  vi.unstubAllGlobals();
+  cleanup();
+});
 
 describe("SlotGrid (spec §5.3, issue #12)", () => {
   it("gives every group and pane its own DOM id", () => {
-    const { container } = render(<SlotGrid />);
+    const { container } = renderWithQuery(<SlotGrid />);
 
     // `react-resizable-panels` stamps `id` and `data-testid` on both a group
     // and the pane containing it, so a split node handing its own id to each
@@ -65,7 +80,7 @@ describe("SlotGrid (spec §5.3, issue #12)", () => {
         ),
       );
 
-    render(<SlotGrid />);
+    renderWithQuery(<SlotGrid />);
 
     // An action mounts no panel, but the slot still has to say so and stay
     // usable — otherwise the pane has no header and no way back out of it.

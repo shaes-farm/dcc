@@ -6,9 +6,9 @@ import type { ParsedUri, Uri } from "@/lib/domain";
 import type { PanelId } from "@/lib/routing";
 
 import { EnvironmentsPanel } from "./fixtures/environments-panel";
-import { PrsPanel } from "./fixtures/prs-panel";
-import { ReposPanel } from "./fixtures/repos-panel";
-import { SecurityPanel } from "./fixtures/security-panel";
+import { PrsPanel } from "./git/prs-panel";
+import { ReposPanel } from "./git/repos-panel";
+import { SecurityPanel } from "./git/security-panel";
 
 /**
  * What every panel receives, and nothing else (issue #12's "no props threaded
@@ -26,11 +26,12 @@ export interface PanelComponentProps {
 /**
  * `PanelId` → the component that renders it.
  *
- * Only a handful of §5.3's library have fixtures today — enough to prove
- * split/resize/swap/maximize and independent degradation. The rest fall back
- * to `UnimplementedPanel` below, so a slot mounting any panel id stays total
- * the same way `resolveUri` is: nothing this ships owes a `PanelId` a
- * component before the issue that actually builds it lands.
+ * The three git panels read live GitHub data through `/api/git/*` (#11);
+ * `environments` is still a fixture until the `DeploymentProvider` lands (#10).
+ * Everything else in §5.3's library falls back to `UnimplementedPanel` below,
+ * so a slot mounting any panel id stays total the same way `resolveUri` is:
+ * nothing this ships owes a `PanelId` a component before the issue that
+ * actually builds it lands.
  */
 export const PANEL_REGISTRY: Partial<
   Record<PanelId, ComponentType<PanelComponentProps>>
